@@ -1,0 +1,55 @@
+# Git
+.git/
+
+# Сборочные каталоги Flutter
+app/build/
+**/.dart_tool/
+build/
+
+# Ephemeral-каталоги Flutter по платформам
+windows/flutter/ephemeral/
+linux/flutter/ephemeral/
+macos/Flutter/ephemeral/
+ios/Pods/
+ios/.symlinks/
+
+# IDE
+.idea/
+.vscode/
+*.iml
+
+# Крупные бинарники и артефакты
+*.fig
+*.apk
+*.aab
+*.ipa
+*.zip
+*.tar.gz
+*.exe
+*.dll
+*.so
+*.a
+
+# Flutter-артефакты
+app/.flutter-plugins-dependencies
+app/.metadata
+app/pubspec.lock
+
+# Сгенерированный код локализации
+app/lib/l10n/app_localizations*.dart
+
+# Gradle / CocoaPods локальные кэши
+.gradle/
+
+# Логи
+*.log
+
+# Тимповые файлы (пустые/отладочные)
+_*.txt
+_*.html
+_*.js
+_*.png
+
+# AI
+AGENTS.md
+CLAUDE.md

@@ -1,0 +1,12 @@
+{
+  "release-type": "simple",
+  "include-component-in-tag": false,
+  "changelog-sections": [
+    {"type": "feat", "section": "Новые возможности"},
+    {"type": "fix", "section": "Исправления"},
+    {"type": "docs", "section": "Документация"},
+    {"type": "refactor", "section": "Рефакторинг"}
+  ],
+  "extra-files": ["pubspec.yaml"]
+}
+
