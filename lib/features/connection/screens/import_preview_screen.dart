@@ -348,7 +348,7 @@ class _ChoiceRow extends StatelessWidget {
             SizedBox(
               width: 22,
               child: selected
-                  ? VispIcon(VispIcons.checkCircle, size: 18, color: colors.accent)
+                  ? VispIcon(VispIcons.checkCircle, size: 18, color: colors.primary)
                   : Icon(Icons.radio_button_unchecked,
                       size: 18, color: colors.textSecondary),
             ),

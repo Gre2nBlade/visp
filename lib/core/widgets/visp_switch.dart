@@ -30,7 +30,7 @@ class VispSwitch extends StatelessWidget {
                 Haptics.selection(context);
                 onChanged!(v);
               },
-        activeThumbColor: colors.accent,
+        activeThumbColor: colors.primary,
         inactiveThumbColor: colors.textSecondary,
         inactiveTrackColor: colors.surface2,
         trackOutlineColor: WidgetStateProperty.all(colors.border),
@@ -99,7 +99,7 @@ class _Segment extends StatelessWidget {
   Widget build(BuildContext context) {
     final colors = SemanticColors.of(context);
     return Material(
-      color: selected ? colors.accent : Colors.transparent,
+      color: selected ? colors.primary : Colors.transparent,
       borderRadius: BorderRadius.circular(AppRadius.s),
       child: InkWell(
         onTap: onTap,

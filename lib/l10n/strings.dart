@@ -129,6 +129,20 @@ class S {
   String get autoInstall => this == ru ? 'Автоустановка' : 'Auto-install';
   String get profilesCount => this == ru ? 'профилей' : 'profiles';
 
+  // Состояния движка (раздел 3.4) -------------------------------------
+  String get engineReady => this == ru ? 'Готов' : 'Ready';
+  String get engineNotInstalled => this == ru ? 'Нужен модуль' : 'Module required';
+  String get engineDownloading => this == ru ? 'Скачивается' : 'Downloading';
+  String get engineNeedsUpdate => this == ru ? 'Обновление' : 'Update available';
+  String get engineUnsupported => this == ru ? 'Недоступно' : 'Unsupported';
+  String get engineDownloadHint => this == ru
+      ? 'Движок докачивается при первом подключении'
+      : 'The engine downloads on first connection';
+  String get protocolChoice => this == ru ? 'Выбор протокола' : 'Choose protocol';
+  String get switchProtocolWarn => this == ru
+      ? 'Смена протокола при активной сессии переподключит соединение.'
+      : 'Switching protocol during an active session will reconnect.';
+
   // Настройки ----------------------------------------------------------
   String get settings => this == ru ? 'Настройки' : 'Settings';
   String get studio => this == ru ? 'Studio' : 'Studio';

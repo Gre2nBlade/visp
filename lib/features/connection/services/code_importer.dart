@@ -37,6 +37,9 @@ class PreviewEntry {
   /// Движок отсутствует — профиль сохранится со статусом «Нужен модуль».
   final bool needsModule;
 
+  /// Распарсенные параметры подключения (для vless/hysteria2/конфигов).
+  final ProtocolConfig? config;
+
   /// Прокси-запись плагина «Прокси для Telegram».
   final bool isProxy;
   final bool selected;
@@ -48,6 +51,7 @@ class PreviewEntry {
     this.protocol,
     this.proxyType,
     this.needsModule = false,
+    this.config,
     this.isProxy = false,
     this.selected = true,
   });
@@ -59,6 +63,7 @@ class PreviewEntry {
     Protocol? protocol,
     ProxyType? proxyType,
     bool? needsModule,
+    ProtocolConfig? config,
     bool? isProxy,
     bool? selected,
   }) {
@@ -69,6 +74,7 @@ class PreviewEntry {
       protocol: protocol ?? this.protocol,
       proxyType: proxyType ?? this.proxyType,
       needsModule: needsModule ?? this.needsModule,
+      config: config ?? this.config,
       isProxy: isProxy ?? this.isProxy,
       selected: selected ?? this.selected,
     );
@@ -150,6 +156,11 @@ class CodeImporter {
       return _parseProtocolLink(input, protocol);
     }
 
+    // WireGuard/AmneziaWG добавляются конфигурационным файлом (раздел 2.4).
+    if (_looksLikeWireGuardConf(input)) {
+      return parseConfig(input);
+    }
+
     if (lower.startsWith('http://') || lower.startsWith('https://')) {
       return _parseSubscription(input);
     }
@@ -175,6 +186,8 @@ class CodeImporter {
       ('trojan://', Protocol.trojan),
       ('hysteria2://', Protocol.hysteria2),
       ('ss://', Protocol.shadowsocks),
+      ('olcrtc://', Protocol.olcRtc),
+      ('webrtc://', Protocol.olcRtc),
       ('wireguard://', Protocol.wireGuard),
       ('vpn://', Protocol.xrayVless),
     ]) {
@@ -272,8 +285,48 @@ class CodeImporter {
 
   static ImportPreview _parseProtocolLink(String input, Protocol protocol) {
     final uri = Uri.tryParse(input);
-    final host = uri?.host.isNotEmpty == true ? uri!.host : 'сервер';
-    final port = uri?.port;
+    final host = (uri?.host.isNotEmpty == true) ? uri!.host : 'сервер';
+    final port = (uri?.port ?? 0) > 0 ? uri!.port : _defaultPort(protocol);
+
+    switch (protocol) {
+      case Protocol.xrayVless:
+        return _parseVless(uri, host, port);
+      case Protocol.hysteria2:
+        return _parseHysteria2(uri, host, port);
+      case Protocol.olcRtc:
+        return _parseOlcRtc(uri, host, port);
+      case Protocol.vmess:
+        return _parseVmess(input, host, port);
+      default:
+        return _linkPreview(protocol, host, port,
+            config: ProtocolConfig(address: host, port: port, raw: input));
+    }
+  }
+
+  static int _defaultPort(Protocol protocol) {
+    switch (protocol) {
+      case Protocol.amneziaWG:
+      case Protocol.wireGuard:
+        return 51820;
+      case Protocol.hysteria2:
+        return 8443;
+      case Protocol.olcRtc:
+      case Protocol.xrayVless:
+      case Protocol.trojan:
+        return 443;
+      default:
+        return 8388;
+    }
+  }
+
+  static ImportPreview _linkPreview(
+    Protocol protocol,
+    String host,
+    int port, {
+    ProtocolConfig? config,
+    bool? needsModule,
+    String? subtitle,
+  }) {
     return ImportPreview(
       kind: ImportKind.protocolLink,
       title: protocol.displayName,
@@ -282,12 +335,202 @@ class CodeImporter {
         PreviewEntry(
           id: 'link-${protocol.name}',
           title: host,
-          subtitle:
-              '${protocol.displayName}${port != null && port > 0 ? ' · $port' : ''}',
+          subtitle: subtitle ?? '${protocol.displayName} · $host:$port',
           protocol: protocol,
+          needsModule: needsModule ?? _engineNotBundled(protocol),
+          config: config,
         ),
       ],
     );
+  }
+
+  /// Движок не входит в стартовый набор и докачивается при первом подключении.
+  static bool _engineNotBundled(Protocol protocol) =>
+      protocol == Protocol.olcRtc ||
+      protocol == Protocol.xrayVless ||
+      protocol == Protocol.vmess ||
+      protocol == Protocol.trojan ||
+      protocol == Protocol.shadowsocks ||
+      protocol == Protocol.wireGuard ||
+      protocol == Protocol.openVpn;
+
+  /// vless://uuid@host:port?encryption=none&security=reality&sni=example.com
+  ///   &fp=chrome&pbk=publicKey&sid=shortId&flow=xtls-rprx-vision&type=tcp
+  static ImportPreview _parseVless(Uri? uri, String host, int port) {
+    final q = uri?.queryParameters ?? const <String, String>{};
+    final isReality =
+        q['security']?.toLowerCase() == 'reality' && (q['pbk']?.isNotEmpty ?? false);
+    final config = ProtocolConfig(
+      address: host,
+      port: port,
+      uuid: (uri?.userInfo.isNotEmpty == true) ? uri!.userInfo : null,
+      encryption: q['encryption'],
+      flow: q['flow'],
+      network: q['type'] ?? q['headertype'],
+      sni: q['sni'] ?? q['peer'],
+      fingerprint: q['fp'],
+      publicKey: q['pbk'],
+      shortId: q['sid'],
+      password: q['path'],
+      extras: {
+        if (q['alpn'] != null) 'alpn': q['alpn']!,
+        if (q['sid'] != null) 'sid': q['sid']!,
+      },
+      raw: uri?.toString(),
+    );
+    return _linkPreview(
+      Protocol.xrayVless,
+      host,
+      port,
+      config: config,
+      subtitle: 'XRay VLESS${isReality ? '/REALITY' : ''} · $host:$port',
+    );
+  }
+
+  /// hysteria2://host:port/?auth=token&obfs=salamander&obfs-password=pw
+  ///   &sni=example.com&insecure=1&pinSHA256=hash
+  static ImportPreview _parseHysteria2(Uri? uri, String host, int port) {
+    final q = uri?.queryParameters ?? const <String, String>{};
+    final config = ProtocolConfig(
+      address: host,
+      port: port,
+      auth: q['auth'],
+      obfs: q['obfs'],
+      obfsPassword: q['obfs-password'],
+      sni: q['sni'],
+      extras: {
+        if (q['pinsha256'] != null) 'pinSHA256': q['pinsha256']!,
+        if (q['insecure'] != null) 'insecure': q['insecure']!,
+      },
+      raw: uri?.toString(),
+    );
+    return _linkPreview(Protocol.hysteria2, host, port, config: config);
+  }
+
+  /// olcrtc://host:port/?transport=webrtc&token=... — транспорт, связанный
+  /// с WebRTC; пригодность проверяется на практике (раздел 3).
+  static ImportPreview _parseOlcRtc(Uri? uri, String host, int port) {
+    final q = uri?.queryParameters ?? const <String, String>{};
+    final config = ProtocolConfig(
+      address: host,
+      port: port,
+      auth: q['token'] ?? q['auth'],
+      sni: q['sni'],
+      extras: {
+        if (q['transport'] != null) 'transport': q['transport']!,
+        if (q['ice'] != null) 'ice': q['ice']!,
+      },
+      raw: uri?.toString(),
+    );
+    return _linkPreview(Protocol.olcRtc, host, port, config: config);
+  }
+
+  /// vmess://base64(JSON) — базовый разбор без угадывания неподдерживаемых
+  /// полей; движок XRay докачивается отдельно.
+  static ImportPreview _parseVmess(String rawInput, String host, int port) {
+    ProtocolConfig? config;
+    try {
+      final payload = rawInput
+          .substring(rawInput.toLowerCase().indexOf('vmess://') + 'vmess://'.length)
+          .trim();
+      final json = utf8.decode(base64.decode(_base64Normalize(payload)));
+      final map = jsonDecode(json) as Map<String, dynamic>;
+      config = ProtocolConfig(
+        address: (map['add'] as String?) ?? host,
+        port: int.tryParse('${map['port']}') ?? port,
+        uuid: map['id'] as String?,
+        network: map['net'] as String?,
+        encryption: map['scy'] as String?,
+        sni: (map['sni'] as String?) ?? (map['host'] as String?),
+        extras: {if (map['aid'] != null) 'aid': '${map['aid']}'},
+        raw: json,
+      );
+    } catch (_) {
+      config = ProtocolConfig(address: host, port: port, raw: rawInput);
+    }
+    return _linkPreview(Protocol.vmess, host, port, config: config);
+  }
+
+  /// Дополняет base64 до валидной длины (payload ссылки часто без padding).
+  static String _base64Normalize(String input) {
+    final cleaned = input.replaceAll(RegExp(r'[^A-Za-z0-9+/=]'), '');
+    final padding = (4 - cleaned.length % 4) % 4;
+    return cleaned + '=' * padding;
+  }
+
+  /// Разбор WireGuard/AmneziaWG .conf (INI). AmneziaWG определяется по
+  /// параметрам маскировки Jc/Jmin/Jmax/S1/S2/H1–H4 в секции [Interface].
+  static ImportPreview parseConfig(String text) {
+    final sections = _parseIniSections(text);
+    final iface = sections['interface'] ?? const <String, String>{};
+    final peer = sections['peer'] ?? const <String, String>{};
+
+    const junkKeys = ['jc', 'jmin', 'jmax', 's1', 's2', 'h1', 'h2', 'h3', 'h4'];
+    final isAmnezia = junkKeys.any((k) => iface.containsKey(k));
+    final protocol = isAmnezia ? Protocol.amneziaWG : Protocol.wireGuard;
+
+    final endpoint = peer['endpoint'] ?? '';
+    final parts = endpoint.split(':');
+    final host = parts.isNotEmpty ? parts.first : 'сервер';
+    final port = (parts.length > 1 ? int.tryParse(parts.sublist(1).join()) : null) ??
+        _defaultPort(protocol);
+
+    final extras = <String, String>{};
+    for (final k in junkKeys) {
+      if (iface.containsKey(k)) extras[k.toUpperCase()] = iface[k]!;
+    }
+
+    final config = ProtocolConfig(
+      address: host,
+      port: port,
+      publicKey: peer['publickey'],
+      password: peer['presharedkey'],
+      auth: iface['privatekey'],
+      extras: extras,
+      raw: text,
+    );
+    return ImportPreview(
+      kind: ImportKind.protocolLink,
+      title: 'Конфигурация ${protocol.displayName}',
+      sourceLabel: 'Файл настроек · WireGuard/AmneziaWG',
+      entries: [
+        PreviewEntry(
+          id: 'conf-${protocol.name}-${host.hashCode.abs()}',
+          title: host,
+          subtitle: '${protocol.displayName} · $host:$port',
+          protocol: protocol,
+          needsModule: !isAmnezia,
+          config: config,
+        ),
+      ],
+    );
+  }
+
+  /// Плоская INI-разбивка по секциям; ключи в нижнем регистре.
+  static Map<String, Map<String, String>> _parseIniSections(String text) {
+    final sections = <String, Map<String, String>>{};
+    var current = 'global';
+    for (final raw in text.split(RegExp(r'\r?\n'))) {
+      final line = raw.trim();
+      if (line.isEmpty || line.startsWith('#') || line.startsWith(';')) continue;
+      final secMatch = RegExp(r'^\[(.+)\]$').firstMatch(line);
+      if (secMatch != null) {
+        current = secMatch.group(1)!.toLowerCase();
+        continue;
+      }
+      final eq = line.indexOf('=');
+      if (eq <= 0) continue;
+      sections
+          .putIfAbsent(current, () => <String, String>{})
+        [line.substring(0, eq).trim().toLowerCase()] = line.substring(eq + 1).trim();
+    }
+    return sections;
+  }
+
+  /// true для WireGuard/AmneziaWG конфигурационного файла.
+  static bool _looksLikeWireGuardConf(String input) {
+    final lower = input.toLowerCase();
+    return lower.contains('[interface]') && lower.contains('[peer]');
   }
 
   static ImportPreview _parseSubscription(String input, {bool decoded = false}) {

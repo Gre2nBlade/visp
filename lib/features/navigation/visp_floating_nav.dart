@@ -69,12 +69,12 @@ class VispFloatingNav extends StatelessWidget {
                             height: _barHeight - 18,
                             child: DecoratedBox(
                               decoration: BoxDecoration(
-                                color: colors.accent.withValues(alpha: 0.16),
+                                color: colors.primary.withValues(alpha: 0.16),
                                 borderRadius: BorderRadius.circular(
                                   (_barHeight - 18) / 2,
                                 ),
                                 border: Border.all(
-                                  color: colors.accent.withValues(alpha: 0.35),
+                                  color: colors.primary.withValues(alpha: 0.35),
                                 ),
                               ),
                             ),
@@ -139,7 +139,7 @@ class _NavTab extends StatelessWidget {
               VispIcon(
                 destination.icon,
                 size: 22,
-                color: selected ? colors.accent : colors.textSecondary,
+                color: selected ? colors.primary : colors.textSecondary,
               ),
               const SizedBox(height: 2),
               Text(
@@ -147,7 +147,7 @@ class _NavTab extends StatelessWidget {
                 style: AppTextStyles.small.copyWith(
                   fontSize: 10,
                   height: 1.0,
-                  color: selected ? colors.accent : colors.textSecondary,
+                  color: selected ? colors.primary : colors.textSecondary,
                   fontWeight: selected ? FontWeight.w600 : FontWeight.w500,
                 ),
               ),
@@ -176,7 +176,7 @@ class _AddButton extends StatelessWidget {
         radius: const BorderRadius.all(Radius.circular(28)),
         padding: EdgeInsets.zero,
         child: Material(
-          color: colors.accent,
+          color: colors.primary,
           shape: const CircleBorder(),
           child: InkWell(
             customBorder: const CircleBorder(),

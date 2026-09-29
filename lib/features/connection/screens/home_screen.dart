@@ -18,6 +18,8 @@ import '../../../core/widgets/visp_toast.dart';
 import '../../../l10n/strings.dart';
 import '../../../state/app_state.dart';
 import '../../servers/servers_content.dart';
+import '../models/connection_models.dart';
+import '../widgets/engine_state_chip.dart';
 import 'add_connection_screen.dart';
 import 'split_tunneling_screen.dart';
 
@@ -199,7 +201,9 @@ class _ConnectedHome extends StatelessWidget {
                 ),
                 const SizedBox(height: AppSpacing.l),
                 _StatusText(state: state, s: s),
-                const SizedBox(height: AppSpacing.xl),
+                const SizedBox(height: AppSpacing.m),
+                _ProtocolSelector(state: state),
+                const SizedBox(height: AppSpacing.l),
                 _ConnectButton(state: state, s: s),
                 if (state.errorText != null)
                   Padding(
@@ -283,7 +287,7 @@ class _StatusText extends StatelessWidget {
             color: isError
                 ? colors.danger
                 : isConnected
-                    ? colors.accent
+                    ? colors.primary
                     : colors.textPrimary,
           ),
         ),
@@ -301,6 +305,162 @@ class _StatusText extends StatelessWidget {
     final profile = state.selectedProfile;
     if (host == null || profile == null) return s.notChosen;
     return '${profile.protocol.displayName} | ${host.address}';
+  }
+}
+
+/// Кнопка-переключатель протокола (раздел 8.1): серая кнопка с закруглёнными
+/// углами и стрелкой вниз. Смена протокола при активной сессии
+/// предупреждает о переподключении (раздел 7.3).
+class _ProtocolSelector extends StatelessWidget {
+  const _ProtocolSelector({required this.state});
+
+  final AppState state;
+
+  @override
+  Widget build(BuildContext context) {
+    final profile = state.selectedProfile;
+    final host = state.selectedHost;
+    if (profile == null || host == null) return const SizedBox.shrink();
+
+    return Center(
+      child: VispButton.compact(
+        label: profile.protocol.displayName,
+        icon: VispIcons.chevronDown,
+        style: VispButtonStyle.secondary,
+        onPressed: () => _openProtocolSheet(context, host),
+      ),
+    );
+  }
+
+  void _openProtocolSheet(BuildContext context, ServerHost host) {
+    final s = context.s;
+    showModalBottomSheet<void>(
+      context: context,
+      backgroundColor: SemanticColors.of(context).popover,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(AppRadius.l)),
+      ),
+      builder: (sheetContext) {
+        final colors = SemanticColors.of(sheetContext);
+        return SafeArea(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Padding(
+                padding: const EdgeInsets.fromLTRB(
+                  AppSpacing.l,
+                  AppSpacing.l,
+                  AppSpacing.l,
+                  AppSpacing.s,
+                ),
+                child: Text(s.protocolChoice, style: AppTextStyles.h2),
+              ),
+              Padding(
+                padding: const EdgeInsets.only(
+                  left: AppSpacing.l,
+                  right: AppSpacing.l,
+                  bottom: AppSpacing.s,
+                ),
+                child: Text(
+                  '${host.name} · ${host.address}',
+                  style: AppTextStyles.small.copyWith(color: colors.textSecondary),
+                ),
+              ),
+              Flexible(
+                child: ListView.builder(
+                  shrinkWrap: true,
+                  itemCount: host.profiles.length,
+                  itemBuilder: (_, i) {
+                    final p = host.profiles[i];
+                    final selected = p.id == state.selectedProfile?.id;
+                    return InkWell(
+                      onTap: () => _confirmAndSelect(context, p),
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: AppSpacing.l,
+                          vertical: AppSpacing.s,
+                        ),
+                        child: Row(
+                          children: [
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    p.protocol.displayName,
+                                    style: AppTextStyles.body.copyWith(
+                                      fontWeight: selected
+                                          ? FontWeight.w600
+                                          : FontWeight.w400,
+                                      color: selected
+                                          ? colors.primary
+                                          : colors.textPrimary,
+                                    ),
+                                  ),
+                                  Text(
+                                    '${p.protocol.description}'
+                                    '\n${host.address}:${p.port}',
+                                    maxLines: 2,
+                                    overflow: TextOverflow.ellipsis,
+                                    style: AppTextStyles.small
+                                        .copyWith(color: colors.textSecondary),
+                                  ),
+                                ],
+                              ),
+                            ),
+                            const SizedBox(width: AppSpacing.s),
+                            EngineStateChip(state: p.engineState),
+                            if (selected)
+                              Padding(
+                                padding: const EdgeInsets.only(left: AppSpacing.s),
+                                child: VispIcon(VispIcons.check,
+                                    size: 18, color: colors.primary),
+                              ),
+                          ],
+                        ),
+                      ),
+                    );
+                  },
+                ),
+              ),
+              const SizedBox(height: AppSpacing.m),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  Future<void> _confirmAndSelect(BuildContext context, ProtocolProfile profile) async {
+    final s = context.s;
+    if (state.isActive && profile.id != state.selectedProfile?.id) {
+      final confirmed = await showDialog<bool>(
+        context: context,
+        builder: (dialogContext) => AlertDialog(
+          backgroundColor: SemanticColors.of(dialogContext).popover,
+          title: Text(s.protocolChoice, style: AppTextStyles.h2),
+          content: Text(s.switchProtocolWarn, style: AppTextStyles.body),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(dialogContext).pop(false),
+              child: Text(s.cancel),
+            ),
+            TextButton(
+              onPressed: () => Navigator.of(dialogContext).pop(true),
+              child: Text(
+                s.continueWord,
+                style: AppTextStyles.button
+                    .copyWith(color: SemanticColors.of(dialogContext).primary),
+              ),
+            ),
+          ],
+        ),
+      );
+      if (confirmed != true) return;
+    }
+    await state.selectProfile(profile.id);
+    if (context.mounted) Navigator.of(context).pop();
   }
 }
 
@@ -589,7 +749,7 @@ class _ServerCard extends StatelessWidget {
               },
               trailing: Switch(
                 value: state.splitTunneling,
-                activeThumbColor: colors.accent,
+                activeThumbColor: colors.primary,
                 onChanged: (v) => state.setSplitTunneling(v),
               ),
             ),

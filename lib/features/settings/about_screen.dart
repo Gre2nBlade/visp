@@ -111,7 +111,7 @@ class AboutScreen extends StatelessWidget {
                   Row(
                     children: [
                       VispIcon(VispIcons.shieldCheck,
-                          size: 18, color: colors.accent),
+                          size: 18, color: colors.primary),
                       const SizedBox(width: AppSpacing.s),
                       Text('Что Visp не обещает', style: AppTextStyles.h2),
                     ],
@@ -222,7 +222,7 @@ class BlupMark extends StatelessWidget {
         child: VispIcon(
           VispIcons.shieldCheck,
           size: 40,
-          color: SemanticColors.of(context).accent,
+          color: SemanticColors.of(context).primary,
         ),
       ),
     );

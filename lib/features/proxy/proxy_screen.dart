@@ -144,7 +144,7 @@ class _LocalServiceCard extends StatelessWidget {
                 : s.serviceOff,
             style: AppTextStyles.small.copyWith(
               color: running
-                  ? SemanticColors.of(context).accent
+                  ? SemanticColors.of(context).primary
                   : SemanticColors.of(context).textSecondary,
             ),
           ),

@@ -13,6 +13,7 @@ import '../../core/widgets/visp_toast.dart';
 import '../../l10n/strings.dart';
 import '../../state/app_state.dart';
 import '../connection/models/connection_models.dart';
+import '../connection/widgets/engine_state_chip.dart';
 
 /// Карточка сервера (раздел 5.2): шапка, вкладки «Протоколы» | «Управление».
 class ServerDetailsScreen extends StatefulWidget {
@@ -115,7 +116,7 @@ class _Tabs extends StatelessWidget {
                 decoration: BoxDecoration(
                   border: Border(
                     bottom: BorderSide(
-                      color: selected ? colors.accent : colors.border,
+                      color: selected ? colors.primary : colors.border,
                       width: selected ? 2 : 1,
                     ),
                   ),
@@ -124,7 +125,7 @@ class _Tabs extends StatelessWidget {
                   labels[i],
                   textAlign: TextAlign.center,
                   style: AppTextStyles.label.copyWith(
-                    color: selected ? colors.accent : colors.textSecondary,
+                    color: selected ? colors.primary : colors.textSecondary,
                     fontWeight:
                         selected ? FontWeight.w600 : FontWeight.w500,
                   ),
@@ -204,8 +205,8 @@ class _ProtocolCard extends StatelessWidget {
               ),
               if (selected)
                 const VispChip(label: 'Выбран', tone: ChipTone.accent)
-              else if (!profile.engineReady)
-                VispChip(label: s.needsModule, tone: ChipTone.warning)
+              else if (profile.engineState != EngineState.ready)
+                EngineStateChip(state: profile.engineState)
               else
                 VispChip(label: s.readyToConnect, tone: ChipTone.neutral),
             ],

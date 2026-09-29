@@ -209,7 +209,7 @@ class _SelfhostedScreenState extends State<SelfhostedScreen> {
             VispIcon(
               VispIcons.checkCircle,
               size: 48,
-              color: SemanticColors.of(context).accent,
+              color: SemanticColors.of(context).primary,
             ),
             const SizedBox(height: AppSpacing.l),
             Text(s.installDone, style: AppTextStyles.h1),

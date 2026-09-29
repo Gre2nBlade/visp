@@ -143,7 +143,7 @@ class _VispButtonState extends State<VispButton> {
     switch (widget.style) {
       case VispButtonStyle.primary:
         fg = colors.background;
-        bg = colors.accent;
+        bg = colors.primary;
         break;
       case VispButtonStyle.secondary:
         fg = colors.textPrimary;
@@ -151,7 +151,7 @@ class _VispButtonState extends State<VispButton> {
         borderColor = colors.border;
         break;
       case VispButtonStyle.tertiary:
-        fg = colors.accent;
+        fg = colors.primary;
         bg = Colors.transparent;
         break;
       case VispButtonStyle.danger:

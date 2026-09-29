@@ -71,7 +71,7 @@ class _Content extends StatelessWidget {
     final colors = SemanticColors.of(context);
     final color = switch (tone) {
       VispToastTone.neutral => colors.textPrimary,
-      VispToastTone.accent => colors.accent,
+      VispToastTone.accent => colors.primary,
       VispToastTone.danger => colors.danger,
       VispToastTone.warning => colors.warning,
     };

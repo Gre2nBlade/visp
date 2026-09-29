@@ -368,7 +368,7 @@ class _LanguageRow extends StatelessWidget {
               width: 22,
               child: selected
                   ? VispIcon(VispIcons.checkCircle,
-                      size: 18, color: colors.accent)
+                      size: 18, color: colors.primary)
                   : Icon(Icons.radio_button_unchecked,
                       size: 18, color: colors.textSecondary),
             ),

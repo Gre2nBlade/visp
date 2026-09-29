@@ -48,6 +48,78 @@ enum Protocol {
   const Protocol(this.displayName, this.description);
 }
 
+/// Состояние движка протокола на устройстве (раздел 3.4).
+///
+/// Три разных вещи не смешиваются: движок есть на устройстве, протокол
+/// скачивается, протокол поддерживается каталогом. Импорт сохраняет профиль
+/// даже без движка: докачка запускается при первом подключении.
+enum EngineState {
+  /// Движка нет. Профиль всё равно сохраняется (раздел 3.4).
+  notInstalled('Нужен модуль', 'Движок докачивается при первом подключении'),
+
+  /// Идёт загрузка движка.
+  downloading('Скачивается', 'Движок загружается'),
+
+  /// Движок на устройстве, подключение возможно.
+  ready('Готов', 'Движок установлен'),
+
+  /// Есть новая проверенная совместимая версия (каталог).
+  needsUpdate('Обновление', 'Рекомендуется обновить движок'),
+
+  /// Движок недоступен на этой платформе/канале.
+  unsupported('Недоступно', 'Движок не поддерживается');
+
+  final String displayName;
+  final String hint;
+
+  const EngineState(this.displayName, this.hint);
+}
+
+/// Распарсенные параметры подключения протокола.
+///
+/// Хранит только то, что есть в ссылке/конфиге; поля без значения — null.
+/// Сырой источник сохраняется в [raw] для отображения и отладки.
+class ProtocolConfig {
+  final String address;
+  final int port;
+  final String? sni;
+  final String? fingerprint;
+  final String? flow;
+  final String? publicKey;
+  final String? shortId;
+  final String? uuid;
+  final String? encryption;
+  final String? auth;
+  final String? obfs;
+  final String? obfsPassword;
+  final String? network;
+  final String? password;
+  final Map<String, String> extras;
+  final String? raw;
+
+  const ProtocolConfig({
+    required this.address,
+    required this.port,
+    this.sni,
+    this.fingerprint,
+    this.flow,
+    this.publicKey,
+    this.shortId,
+    this.uuid,
+    this.encryption,
+    this.auth,
+    this.obfs,
+    this.obfsPassword,
+    this.network,
+    this.password,
+    this.extras = const {},
+    this.raw,
+  });
+
+  /// Подпись «протокол | IP-адрес» для строки сессии (раздел 8.3.1).
+  String get endpoint => '$address:$port';
+}
+
 /// Отдельный профиль протокола под хостом. Один VPN-профиль считается одним
 /// подключением; правила маршрутизации — сопутствующие настройки.
 class ProtocolProfile {
@@ -56,9 +128,12 @@ class ProtocolProfile {
   final Protocol protocol;
   final int port;
 
-  /// Движок находится на устройстве. Профиль без движка не выдаётся
-  /// за рабочий: статус «Нужен модуль».
-  final bool engineReady;
+  /// Состояние движка на устройстве (раздел 3.4). Профиль без движка не
+  /// выдаётся за рабочий: соответствующий чип показывается в списке.
+  final EngineState engineState;
+
+  /// Распарсенные параметры подключения (могут быть у пустой заглушки).
+  final ProtocolConfig? config;
 
   /// Источник записи: «Свой сервер», код, подписка.
   final String source;
@@ -70,17 +145,22 @@ class ProtocolProfile {
     required this.name,
     required this.protocol,
     required this.port,
-    required this.engineReady,
+    required this.engineState,
+    this.config,
     required this.source,
     this.favorite = false,
   });
+
+  /// Совместимый с UI способ спросить «движок готов к подключению».
+  bool get engineReady => engineState == EngineState.ready;
 
   ProtocolProfile copyWith({
     String? id,
     String? name,
     Protocol? protocol,
     int? port,
-    bool? engineReady,
+    EngineState? engineState,
+    ProtocolConfig? config,
     String? source,
     bool? favorite,
   }) {
@@ -89,7 +169,8 @@ class ProtocolProfile {
       name: name ?? this.name,
       protocol: protocol ?? this.protocol,
       port: port ?? this.port,
-      engineReady: engineReady ?? this.engineReady,
+      engineState: engineState ?? this.engineState,
+      config: config ?? this.config,
       source: source ?? this.source,
       favorite: favorite ?? this.favorite,
     );

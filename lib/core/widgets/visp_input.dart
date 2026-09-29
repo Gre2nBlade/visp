@@ -108,7 +108,7 @@ class VispInput extends StatelessWidget {
                       inputFormatters: inputFormatters,
                       onChanged: onChanged,
                       onSubmitted: onSubmitted,
-                      cursorColor: colors.accent,
+                      cursorColor: colors.primary,
                       style: AppTextStyles.body.copyWith(
                         color: colors.textPrimary,
                       ),

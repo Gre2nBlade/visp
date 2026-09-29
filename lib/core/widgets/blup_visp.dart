@@ -240,7 +240,7 @@ class _BlupPainter extends CustomPainter {
     final isError = status == BlupStatus.error;
 
     final perimeter = isAccent
-        ? colors.accentBright
+        ? colors.primaryBright
         : isError
             ? colors.blupError
             : colors.blupIdle;
@@ -249,7 +249,7 @@ class _BlupPainter extends CustomPainter {
     final fillTop = status == BlupStatus.connected
         ? colors.blupConnected
         : isAccent
-            ? colors.accent.withValues(alpha: brightness == Brightness.dark ? 0.30 : 0.22)
+            ? colors.primary.withValues(alpha: brightness == Brightness.dark ? 0.30 : 0.22)
             : isError
                 ? colors.blupError.withValues(alpha: 0.14)
                 : colors.blupIdle.withValues(alpha: brightness == Brightness.dark ? 0.16 : 0.10);
@@ -257,7 +257,7 @@ class _BlupPainter extends CustomPainter {
     final fillBottom = status == BlupStatus.connected
         ? colors.blupConnected.withValues(alpha: brightness == Brightness.dark ? 0.45 : 0.55)
         : isAccent
-            ? colors.accent.withValues(alpha: brightness == Brightness.dark ? 0.10 : 0.08)
+            ? colors.primary.withValues(alpha: brightness == Brightness.dark ? 0.10 : 0.08)
             : colors.blupIdle.withValues(alpha: 0.03);
 
     final rect = Rect.fromCircle(center: Offset(cx, cy), radius: baseRadius * 1.3);
@@ -276,7 +276,7 @@ class _BlupPainter extends CustomPainter {
       canvas.drawPath(
         path,
         Paint()
-          ..color = colors.accent.withValues(alpha: 0.18)
+          ..color = colors.primary.withValues(alpha: 0.18)
           ..maskFilter = const MaskFilter.blur(BlurStyle.outer, 22),
       );
     }
@@ -315,7 +315,7 @@ class _BlupPainter extends CustomPainter {
             ..style = PaintingStyle.stroke
             ..strokeWidth = 3.2
             ..strokeCap = StrokeCap.round
-            ..color = colors.accentBright
+            ..color = colors.primaryBright
             ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 6),
         );
       }

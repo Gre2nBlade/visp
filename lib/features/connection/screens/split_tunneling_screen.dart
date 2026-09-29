@@ -419,7 +419,7 @@ class _AppModeRow extends StatelessWidget {
               Icon(
                 selected ? Icons.check_circle : Icons.radio_button_unchecked,
                 size: 18,
-                color: selected ? colors.accent : colors.textSecondary,
+                color: selected ? colors.primary : colors.textSecondary,
               ),
             ],
           ),
@@ -442,7 +442,7 @@ class _PriorityCard extends StatelessWidget {
         children: [
           Row(
             children: [
-              VispIcon(VispIcons.shieldCheck, size: 18, color: colors.accent),
+              VispIcon(VispIcons.shieldCheck, size: 18, color: colors.primary),
               const SizedBox(width: AppSpacing.s),
               Text('Приоритет правил', style: AppTextStyles.h2),
             ],

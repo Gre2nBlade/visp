@@ -10,6 +10,7 @@ import '../../core/widgets/visp_chip.dart';
 import '../../core/widgets/visp_toast.dart';
 import '../../l10n/strings.dart';
 import '../connection/models/connection_models.dart';
+import '../connection/widgets/engine_state_chip.dart';
 import '../settings/server_details_screen.dart';
 import '../../state/app_state.dart';
 
@@ -255,7 +256,6 @@ class _ProfileRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final colors = SemanticColors.of(context);
-    final s = context.s;
 
     return InkWell(
       onTap: onTap,
@@ -276,7 +276,7 @@ class _ProfileRow extends StatelessWidget {
             SizedBox(
               width: 22,
               child: selected
-                  ? VispIcon(VispIcons.check, size: 18, color: colors.accent)
+                  ? VispIcon(VispIcons.check, size: 18, color: colors.primary)
                   : null,
             ),
             const SizedBox(width: AppSpacing.s + 2),
@@ -288,7 +288,7 @@ class _ProfileRow extends StatelessWidget {
                     profile.name,
                     style: AppTextStyles.body.copyWith(
                       fontWeight: selected ? FontWeight.w600 : FontWeight.w500,
-                      color: selected ? colors.accent : colors.textPrimary,
+                      color: selected ? colors.primary : colors.textPrimary,
                     ),
                   ),
                   Text(
@@ -300,11 +300,8 @@ class _ProfileRow extends StatelessWidget {
                 ],
               ),
             ),
-            if (!profile.engineReady)
-              VispChip(
-                label: s.needsModule,
-                tone: ChipTone.warning,
-              ),
+            if (profile.engineState != EngineState.ready)
+              EngineStateChip(state: profile.engineState),
           ],
         ),
       ),

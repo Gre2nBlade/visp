@@ -19,11 +19,11 @@ class VispTheme {
         brightness == Brightness.dark ? SemanticColors.dark : SemanticColors.light;
     final scheme = ColorScheme(
       brightness: brightness,
-      primary: colors.accent,
+      primary: colors.primary,
       onPrimary: brightness == Brightness.dark
           ? const Color(0xFF0B1410)
           : Colors.white,
-      secondary: colors.accentBright,
+      secondary: colors.primaryBright,
       onSecondary: brightness == Brightness.dark
           ? const Color(0xFF0B1410)
           : Colors.white,

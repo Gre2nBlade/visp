@@ -155,7 +155,7 @@ class PluginsScreen extends StatelessWidget {
                     padding: const EdgeInsets.only(bottom: AppSpacing.s),
                     child: Row(
                       children: [
-                        VispIcon(VispIcons.check, size: 16, color: colors.accent),
+                        VispIcon(VispIcons.check, size: 16, color: colors.primary),
                         const SizedBox(width: AppSpacing.s),
                         Expanded(
                           child: RichText(

@@ -149,7 +149,7 @@ class _FilterChip extends StatelessWidget {
     final colors = SemanticColors.of(context);
     return Material(
       color: selected
-          ? colors.accent.withValues(alpha: 0.16)
+          ? colors.primary.withValues(alpha: 0.16)
           : colors.surface2,
       borderRadius: BorderRadius.circular(AppRadius.s + 4),
       child: InkWell(
@@ -164,14 +164,14 @@ class _FilterChip extends StatelessWidget {
             borderRadius: BorderRadius.circular(AppRadius.s + 4),
             border: Border.all(
               color: selected
-                  ? colors.accent.withValues(alpha: 0.5)
+                  ? colors.primary.withValues(alpha: 0.5)
                   : colors.border,
             ),
           ),
           child: Text(
             label,
             style: AppTextStyles.small.copyWith(
-              color: selected ? colors.accent : colors.textSecondary,
+              color: selected ? colors.primary : colors.textSecondary,
               fontWeight: selected ? FontWeight.w600 : FontWeight.w500,
             ),
           ),

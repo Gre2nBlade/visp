@@ -160,7 +160,7 @@ class AppState extends ChangeNotifier {
             name: 'AmneziaWG',
             protocol: Protocol.amneziaWG,
             port: 51820,
-            engineReady: true,
+            engineState: EngineState.ready,
             source: 'Свой сервер',
             favorite: true,
           ),
@@ -169,7 +169,7 @@ class AppState extends ChangeNotifier {
             name: 'Hysteria 2',
             protocol: Protocol.hysteria2,
             port: 8443,
-            engineReady: true,
+            engineState: EngineState.ready,
             source: 'Свой сервер',
           ),
           const ProtocolProfile(
@@ -177,7 +177,7 @@ class AppState extends ChangeNotifier {
             name: 'XRay VLESS/REALITY',
             protocol: Protocol.xrayVless,
             port: 443,
-            engineReady: false,
+            engineState: EngineState.notInstalled,
             source: 'Свой сервер',
           ),
         ],
@@ -194,7 +194,7 @@ class AppState extends ChangeNotifier {
             name: 'AmneziaWG',
             protocol: Protocol.amneziaWG,
             port: 51820,
-            engineReady: true,
+            engineState: EngineState.ready,
             source: 'Код VISP-7F2A-9Q4M',
           ),
           const ProtocolProfile(
@@ -202,7 +202,7 @@ class AppState extends ChangeNotifier {
             name: 'olcRTC',
             protocol: Protocol.olcRtc,
             port: 443,
-            engineReady: false,
+            engineState: EngineState.notInstalled,
             source: 'Код VISP-7F2A-9Q4M',
           ),
         ],
@@ -219,7 +219,7 @@ class AppState extends ChangeNotifier {
             name: 'Shadowsocks',
             protocol: Protocol.shadowsocks,
             port: 8388,
-            engineReady: false,
+            engineState: EngineState.notInstalled,
             source: 'Подписка',
           ),
         ],
@@ -284,12 +284,19 @@ class AppState extends ChangeNotifier {
     await _tick(token, const Duration(milliseconds: 900));
     if (_cancelled(token)) return;
 
-    // Движок должен быть на устройстве; иначе запись остаётся со статусом
-    // «Нужен модуль», а остальные подключения пригодны.
-    if (!profile.engineReady) {
-      _fail('Нужен модуль: движок ${profile.protocol.displayName} '
-          'не скачан. Доставка зависит от ОС и магазина.');
-      return;
+    // Импорт сохраняет профиль даже без движка: докачка запускается при
+    // первом подключении, если ОС и канал допускают (раздел 3.4).
+    if (profile.engineState != EngineState.ready) {
+      if (profile.engineState == EngineState.unsupported) {
+        _fail('Движок ${profile.protocol.displayName} недоступен на этой '
+            'платформе. Подключение невозможно.');
+        return;
+      }
+      _setEngineState(profile, EngineState.downloading);
+      _setStatus(BlupStatus.preparing, detail: 'Докачка модуля');
+      await _tick(token, const Duration(milliseconds: 1600));
+      if (_cancelled(token)) return;
+      _setEngineState(profile, EngineState.ready);
     }
 
     _setStatus(BlupStatus.checking, detail: 'Проверка сервера');
@@ -307,6 +314,23 @@ class AppState extends ChangeNotifier {
     _upSpeed = 0;
     _setStatus(BlupStatus.connected, detail: null);
     _startTicker();
+  }
+
+  /// Обновляет состояние движка профиля в дереве хостов.
+  void _setEngineState(ProtocolProfile profile, EngineState state) {
+    _hosts = _hosts
+        .map((host) => ServerHost(
+              id: host.id,
+              name: host.name,
+              address: host.address,
+              region: host.region,
+              owned: host.owned,
+              profiles: host.profiles
+                  .map((p) => p.id == profile.id ? p.copyWith(engineState: state) : p)
+                  .toList(),
+            ))
+        .toList();
+    notifyListeners();
   }
 
   /// Явная отмена затянувшегося подключения.
@@ -507,7 +531,10 @@ class AppState extends ChangeNotifier {
             name: protocol.displayName,
             protocol: protocol,
             port: port,
-            engineReady: !entry.needsModule,
+            engineState: entry.needsModule
+                ? EngineState.notInstalled
+                : EngineState.ready,
+            config: entry.config,
             source: preview.sourceLabel,
           ),
         ],
@@ -602,7 +629,7 @@ class AppState extends ChangeNotifier {
             name: 'AmneziaWG',
             protocol: Protocol.amneziaWG,
             port: 51820,
-            engineReady: true,
+            engineState: EngineState.ready,
             source: 'Self-hosted установка',
             favorite: true,
           ),

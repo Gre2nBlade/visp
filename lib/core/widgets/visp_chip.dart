@@ -44,8 +44,8 @@ class VispChip extends StatelessWidget {
         fg = colors.textSecondary;
         bg = colors.surface2;
       case ChipTone.accent:
-        fg = colors.accent;
-        bg = colors.accent.withValues(alpha: 0.12);
+        fg = colors.primary;
+        bg = colors.primary.withValues(alpha: 0.12);
         leading = leading ?? VispIcons.checkCircle;
       case ChipTone.warning:
         fg = colors.warning;

@@ -60,7 +60,7 @@ class GlassCapsule extends StatelessWidget {
             border: border
                 ? Border.fromBorderSide(
                     BorderSide(
-                      color: (dark ? colors.accentBright : Colors.white)
+                      color: (dark ? colors.primaryBright : Colors.white)
                           .withValues(alpha: dark ? 0.14 : 0.7),
                       width: 1,
                     ),

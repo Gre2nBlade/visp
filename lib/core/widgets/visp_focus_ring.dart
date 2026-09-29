@@ -34,7 +34,7 @@ class VispFocusRing extends StatelessWidget {
                 borderRadius: br.add(BorderRadius.circular(g + 1)),
                 border: focused
                     ? Border.all(
-                        color: colors.accent,
+                        color: colors.primary,
                         width: AppFocusRing.width,
                       )
                     : null,

@@ -180,7 +180,7 @@ class _CatalogCard extends StatelessWidget {
         children: [
           Row(
             children: [
-              VispIcon(VispIcons.theme, size: 18, color: colors.accent),
+              VispIcon(VispIcons.theme, size: 18, color: colors.primary),
               const SizedBox(width: AppSpacing.s),
               Text('Каталог тем', style: AppTextStyles.h2),
             ],
