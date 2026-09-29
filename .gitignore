@@ -2,9 +2,8 @@
 .git/
 
 # Сборочные каталоги Flutter
-app/build/
-**/.dart_tool/
 build/
+**/.dart_tool/
 
 # Ephemeral-каталоги Flutter по платформам
 windows/flutter/ephemeral/
@@ -12,6 +11,7 @@ linux/flutter/ephemeral/
 macos/Flutter/ephemeral/
 ios/Pods/
 ios/.symlinks/
+ios/Flutter/ephemeral/
 
 # IDE
 .idea/
@@ -30,13 +30,8 @@ ios/.symlinks/
 *.so
 *.a
 
-# Flutter-артефакты
-app/.flutter-plugins-dependencies
-app/.metadata
-app/pubspec.lock
-
-# Сгенерированный код локализации
-app/lib/l10n/app_localizations*.dart
+# Flutter-артефакты (регерируются автоматически)
+.flutter-plugins-dependencies
 
 # Gradle / CocoaPods локальные кэши
 .gradle/
