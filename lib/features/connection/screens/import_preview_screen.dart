@@ -149,9 +149,16 @@ class _ImportPreviewScreenState extends State<ImportPreviewScreen> {
                   ),
                 ),
                 const SizedBox(height: AppSpacing.l),
+                // Тумблер в строке включает или выключает профиль при импорте.
+                // Без этой подписи его назначение не читается.
                 Text(
-                  '${s.selected}: $_selectedCount',
-                  style: AppTextStyles.label,
+                  _selectedCount == _entries.length
+                      ? 'Все профили будут добавлены'
+                      : 'Отмечено $_selectedCount из ${_entries.length}. '
+                          'Снимите отметку, чтобы не добавлять профиль.',
+                  style: AppTextStyles.label.copyWith(
+                    color: colors.textSecondary,
+                  ),
                 ),
                 const SizedBox(height: AppSpacing.m),
                 VispCard(

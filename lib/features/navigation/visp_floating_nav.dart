@@ -142,13 +142,20 @@ class _NavTab extends StatelessWidget {
                 color: selected ? colors.primary : colors.textSecondary,
               ),
               const SizedBox(height: 2),
-              Text(
-                destination.label,
-                style: AppTextStyles.small.copyWith(
-                  fontSize: 10,
-                  height: 1.0,
-                  color: selected ? colors.primary : colors.textSecondary,
-                  fontWeight: selected ? FontWeight.w600 : FontWeight.w500,
+              // Подпись не должна ни переноситься по букве, ни обрезаться:
+              // при нехватке места она сжимается целиком.
+              FittedBox(
+                fit: BoxFit.scaleDown,
+                child: Text(
+                  destination.label,
+                  maxLines: 1,
+                  softWrap: false,
+                  style: AppTextStyles.small.copyWith(
+                    fontSize: 10,
+                    height: 1.0,
+                    color: selected ? colors.primary : colors.textSecondary,
+                    fontWeight: selected ? FontWeight.w600 : FontWeight.w500,
+                  ),
                 ),
               ),
             ],

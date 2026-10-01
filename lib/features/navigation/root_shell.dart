@@ -1,8 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
-import '../../core/theme/app_colors.dart';
-import '../../core/theme/app_text_styles.dart';
 import '../connection/screens/add_connection_screen.dart';
 import '../connection/screens/home_screen.dart';
 import 'nav_destination.dart';
@@ -11,7 +9,6 @@ import '../proxy/proxy_screen.dart';
 import '../servers/servers_screen.dart';
 import '../settings/settings_screen.dart';
 import '../settings/studio_screen.dart';
-import '../../l10n/strings.dart';
 import '../../state/app_state.dart';
 
 /// Корневой экран: плавающая навигация и переключение вкладок.
@@ -55,25 +52,20 @@ class _RootShellState extends State<RootShell> {
     final destinations = _destinations;
     if (_index >= destinations.length) _index = 0;
 
-    final s = context.s;
     final current = destinations[_index];
 
     return Scaffold(
       extendBody: true,
       body: _screenFor(current),
-      bottomNavigationBar: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          if (current == NavDestination.settings && !state.studioPinned)
-            _StudioHint(s: s),
-          VispFloatingNav(
-            destinations: destinations,
-            currentIndex: _index,
-            onTap: (i) => setState(() => _index = i),
-            onAdd: _onAdd,
-            glass: state.glass,
-          ),
-        ],
+      // Навигация стоит вплотную к экрану: подсказка между ними разрывала
+      // композицию и выглядела как обрывок текста. Про Studio сообщает
+      // отдельный пункт в настройках.
+      bottomNavigationBar: VispFloatingNav(
+        destinations: destinations,
+        currentIndex: _index,
+        onTap: (i) => setState(() => _index = i),
+        onAdd: _onAdd,
+        glass: state.glass,
       ),
     );
   }
@@ -91,26 +83,5 @@ class _RootShellState extends State<RootShell> {
       case NavDestination.settings:
         return const SettingsScreen();
     }
-  }
-}
-
-/// Напоминание, что Studio доступна из настроек, даже если вкладка
-/// не закреплена (раздел 4.6: открепление убирает только вкладку).
-class _StudioHint extends StatelessWidget {
-  const _StudioHint({required this.s});
-
-  final S s;
-
-  @override
-  Widget build(BuildContext context) {
-    final colors = SemanticColors.of(context);
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 24),
-      child: Text(
-        '${s.studio} — ${s.studioDesc}',
-        textAlign: TextAlign.center,
-        style: AppTextStyles.small.copyWith(color: colors.textSecondary),
-      ),
-    );
   }
 }

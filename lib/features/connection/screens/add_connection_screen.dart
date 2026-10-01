@@ -15,7 +15,9 @@ import '../../../core/widgets/visp_toast.dart';
 import '../../../l10n/strings.dart';
 import '../../../state/app_state.dart';
 import '../services/code_importer.dart';
+import '../services/config_file_import.dart';
 import 'import_preview_screen.dart';
+import 'qr_scan_screen.dart';
 import 'selfhosted_screen.dart';
 
 /// Разделы экрана добавления подключения (раздел 6).
@@ -124,77 +126,16 @@ class _AddConnectionScreenState extends State<AddConnectionScreen> {
     }
   }
 
+  /// Конфигурационный файл: OpenVPN, WireGuard и совместимые конфиги
+  /// (раздел 2.4). Содержимое уходит в тот же предпросмотр импорта.
   void _showFilePickerNote() {
-    VispToast.showError(
-      context,
-      'Выбор файла конфигурации: OpenVPN, WireGuard и совместимые конфиги',
-      actionLabel: context.s.paste,
-      onAction: () => _codeFocus.requestFocus(),
-    );
+    openConfigFileFlow(context);
   }
 
   /// QR-сканер запрашивает камеру только на время сканирования (раздел 18).
-  /// В первой версии доступен ручной ввод распознанного кода.
   void _showQrSheet() {
-    showModalBottomSheet(
-      context: context,
-      backgroundColor: Colors.transparent,
-      isScrollControlled: true,
-      builder: (context) {
-        final colors = SemanticColors.of(context);
-        final s = context.s;
-        return Container(
-          decoration: BoxDecoration(
-            color: colors.surface1,
-            borderRadius: const BorderRadius.vertical(
-              top: Radius.circular(24),
-            ),
-          ),
-          padding: EdgeInsets.fromLTRB(
-            AppSpacing.l,
-            AppSpacing.l,
-            AppSpacing.l,
-            AppSpacing.l + MediaQuery.of(context).viewInsets.bottom,
-          ),
-          child: SafeArea(
-            top: false,
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(s.qrCode, style: AppTextStyles.h1),
-                const SizedBox(height: AppSpacing.s),
-                Text(
-                  'Сканер запросит камеру только на время сканирования. '
-                  'Если сканирование недоступно, вставьте распознанный код.',
-                  style: AppTextStyles.body.copyWith(
-                    color: colors.textSecondary,
-                  ),
-                ),
-                const SizedBox(height: AppSpacing.l),
-                VispButton(
-                  label: '${s.paste} код',
-                  icon: VispIcons.paste,
-                  expanded: true,
-                  onPressed: () async {
-                    final data = await Clipboard.getData('text/plain');
-                    final text = (data?.text ?? '').trim();
-                    if (!context.mounted) return;
-                    if (text.isEmpty) {
-                      VispToast.showError(context, context.s.noData);
-                      return;
-                    }
-                    Navigator.of(context).pop();
-                    _codeController.text = text;
-                    await _submitCode();
-                  },
-                ),
-              ],
-            ),
-          ),
-        );
-      },
-    );
+    Navigator.of(context).pop();
+    openQrScanFlow(context);
   }
 
   void _showSubscriptionSheet() {

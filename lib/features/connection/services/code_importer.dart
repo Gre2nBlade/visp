@@ -170,14 +170,43 @@ class CodeImporter {
       return _parseSubscription(input, decoded: true);
     }
 
-    return const ImportPreview(
+    return ImportPreview(
       kind: ImportKind.unknown,
       title: 'Неизвестный формат',
       sourceLabel: '',
       entries: [],
-      error: 'Формат пока не поддерживается',
+      error: _unknownFormatError(input),
     );
   }
+
+  /// Подсказка вместо общего отказа: если введено похожее на протокол или на
+  /// код слово, объясняем, что именно ожидалось (раздел 2.7 — не угадывать).
+  static String _unknownFormatError(String input) {
+    final lower = input.toLowerCase().trim();
+    for (final hint in _protocolHints) {
+      if (lower.contains(hint.$1)) {
+        return hint.$2;
+      }
+    }
+    if (lower.contains('wireguard') || lower.contains('amnezia')) {
+      return 'AmneziaWG и WireGuard добавляются конфигурационным файлом '
+          '(раздел [Interface]/[Peer]) или кодом VISP-****-****';
+    }
+    return 'Нужен код VISP-****-****, ссылка протокола (vless://, hysteria2://, '
+        'olcrtc://), конфигурационный файл или подписка';
+  }
+
+  /// Подсказки для похожих, но неверных вводов.
+  static const List<(String, String)> _protocolHints = [
+    ('vless', 'Для VLESS нужен код вида vless://…@host:443?…#Название'),
+    ('vmess', 'Для VMess нужен код вида vmess://… с base64 внутри'),
+    ('vpn://', 'vpn:// не является единым стандартом. Нужен код конкретного '
+        'протокола: vless://, hysteria2://, olcrtc://'),
+    ('hysteria', 'Для Hysteria 2 нужен код вида hysteria2://host:8443/?auth=…'),
+    ('ss://', 'Shadowsocks добавляется совместимым движком позже. '
+        'Пока доступен код ss:// как подписка'),
+    ('trojan', 'Для Trojan нужен код вида trojan://…@host:443#Название'),
+  ];
 
   static Protocol? _protocolOf(String lower) {
     for (final entry in const [
@@ -285,20 +314,37 @@ class CodeImporter {
 
   static ImportPreview _parseProtocolLink(String input, Protocol protocol) {
     final uri = Uri.tryParse(input);
-    final host = (uri?.host.isNotEmpty == true) ? uri!.host : 'сервер';
-    final port = (uri?.port ?? 0) > 0 ? uri!.port : _defaultPort(protocol);
+    final hasHost = uri?.host.isNotEmpty == true;
+
+    // Схема без адреса — это не ссылка. Такое не должно превращаться в
+    // профиль «сервер»: лучше честная подсказка с ожидаемым форматом.
+    if (!hasHost) {
+      return ImportPreview(
+        kind: ImportKind.unknown,
+        title: 'Неизвестный формат',
+        sourceLabel: '',
+        entries: [],
+        error: 'В ссылке нет адреса. Ожидается '
+            '${protocol.displayName}: протокол://…@host:порт',
+      );
+    }
+
+    final host = uri!.host;
+    final port = uri.port > 0 ? uri.port : _defaultPort(protocol);
+    final name = _nameFromFragment(uri);
 
     switch (protocol) {
       case Protocol.xrayVless:
-        return _parseVless(uri, host, port);
+        return _parseVless(uri, host, port, name);
       case Protocol.hysteria2:
-        return _parseHysteria2(uri, host, port);
+        return _parseHysteria2(uri, host, port, name);
       case Protocol.olcRtc:
-        return _parseOlcRtc(uri, host, port);
+        return _parseOlcRtc(uri, host, port, name);
       case Protocol.vmess:
-        return _parseVmess(input, host, port);
+        return _parseVmess(input, host, port, name);
       default:
         return _linkPreview(protocol, host, port,
+            name: name,
             config: ProtocolConfig(address: host, port: port, raw: input));
     }
   }
@@ -326,6 +372,7 @@ class CodeImporter {
     ProtocolConfig? config,
     bool? needsModule,
     String? subtitle,
+    String? name,
   }) {
     return ImportPreview(
       kind: ImportKind.protocolLink,
@@ -334,7 +381,10 @@ class CodeImporter {
       entries: [
         PreviewEntry(
           id: 'link-${protocol.name}',
-          title: host,
+          // Ссылка может нести своё имя в конце после «#» (например
+          // «#Amnezia»). Показываем его, а не адрес: так пользователь видит
+          // то название, которое он сам и вводил.
+          title: (name != null && name.isNotEmpty) ? name : host,
           subtitle: subtitle ?? '${protocol.displayName} · $host:$port',
           protocol: protocol,
           needsModule: needsModule ?? _engineNotBundled(protocol),
@@ -342,6 +392,13 @@ class CodeImporter {
         ),
       ],
     );
+  }
+
+  /// Имя из ссылки: фрагмент после «#», декодированный.
+  static String? _nameFromFragment(Uri uri) {
+    if (uri.fragment.isEmpty) return null;
+    final decoded = Uri.decodeFull(uri.fragment.replaceAll('+', '%20')).trim();
+    return decoded.isEmpty ? null : decoded;
   }
 
   /// Движок не входит в стартовый набор и докачивается при первом подключении.
@@ -356,7 +413,8 @@ class CodeImporter {
 
   /// vless://uuid@host:port?encryption=none&security=reality&sni=example.com
   ///   &fp=chrome&pbk=publicKey&sid=shortId&flow=xtls-rprx-vision&type=tcp
-  static ImportPreview _parseVless(Uri? uri, String host, int port) {
+  static ImportPreview _parseVless(
+      Uri? uri, String host, int port, String? name) {
     final q = uri?.queryParameters ?? const <String, String>{};
     final isReality =
         q['security']?.toLowerCase() == 'reality' && (q['pbk']?.isNotEmpty ?? false);
@@ -382,6 +440,7 @@ class CodeImporter {
       Protocol.xrayVless,
       host,
       port,
+      name: name,
       config: config,
       subtitle: 'XRay VLESS${isReality ? '/REALITY' : ''} · $host:$port',
     );
@@ -389,7 +448,8 @@ class CodeImporter {
 
   /// hysteria2://host:port/?auth=token&obfs=salamander&obfs-password=pw
   ///   &sni=example.com&insecure=1&pinSHA256=hash
-  static ImportPreview _parseHysteria2(Uri? uri, String host, int port) {
+  static ImportPreview _parseHysteria2(
+      Uri? uri, String host, int port, String? name) {
     final q = uri?.queryParameters ?? const <String, String>{};
     final config = ProtocolConfig(
       address: host,
@@ -404,12 +464,14 @@ class CodeImporter {
       },
       raw: uri?.toString(),
     );
-    return _linkPreview(Protocol.hysteria2, host, port, config: config);
+    return _linkPreview(Protocol.hysteria2, host, port,
+        name: name, config: config);
   }
 
   /// olcrtc://host:port/?transport=webrtc&token=... — транспорт, связанный
   /// с WebRTC; пригодность проверяется на практике (раздел 3).
-  static ImportPreview _parseOlcRtc(Uri? uri, String host, int port) {
+  static ImportPreview _parseOlcRtc(
+      Uri? uri, String host, int port, String? name) {
     final q = uri?.queryParameters ?? const <String, String>{};
     final config = ProtocolConfig(
       address: host,
@@ -422,12 +484,13 @@ class CodeImporter {
       },
       raw: uri?.toString(),
     );
-    return _linkPreview(Protocol.olcRtc, host, port, config: config);
+    return _linkPreview(Protocol.olcRtc, host, port, name: name, config: config);
   }
 
   /// vmess://base64(JSON) — базовый разбор без угадывания неподдерживаемых
   /// полей; движок XRay докачивается отдельно.
-  static ImportPreview _parseVmess(String rawInput, String host, int port) {
+  static ImportPreview _parseVmess(
+      String rawInput, String host, int port, String? name) {
     ProtocolConfig? config;
     try {
       final payload = rawInput
@@ -448,7 +511,8 @@ class CodeImporter {
     } catch (_) {
       config = ProtocolConfig(address: host, port: port, raw: rawInput);
     }
-    return _linkPreview(Protocol.vmess, host, port, config: config);
+    return _linkPreview(Protocol.vmess, host, port,
+        name: name, config: config);
   }
 
   /// Дополняет base64 до валидной длины (payload ссылки часто без padding).
