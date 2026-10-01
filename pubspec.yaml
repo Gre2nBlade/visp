@@ -24,6 +24,8 @@ dependencies:
   shared_preferences: ^2.5.5
   flutter_localizations:
     sdk: flutter
+  liquid_glass_easy: ^4.3.4
+  flutter_vless: ^1.1.6
 
 dev_dependencies:
   flutter_test:

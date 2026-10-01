@@ -96,6 +96,46 @@ packages:
     description: flutter
     source: sdk
     version: "0.0.0"
+  flutter_vless:
+    dependency: "direct main"
+    description:
+      name: flutter_vless
+      sha256: ccda63e67218c99f134a338d904264b9772bf289966fafb5067801d547b27f51
+      url: "https://pub.dev"
+    source: hosted
+    version: "1.1.6"
+  flutter_vless_android:
+    dependency: transitive
+    description:
+      name: flutter_vless_android
+      sha256: "9dfcdfe74ba6c0c4f3569cc9c1089e0011f36ee94c69ce3960067dc02115e245"
+      url: "https://pub.dev"
+    source: hosted
+    version: "1.1.6"
+  flutter_vless_macos:
+    dependency: transitive
+    description:
+      name: flutter_vless_macos
+      sha256: eac0c6508c44d757a9d5b2e4c21d8ea8da01e79c9c6e4fffdd0d4981bef17f9a
+      url: "https://pub.dev"
+    source: hosted
+    version: "1.1.6"
+  flutter_vless_platform_interface:
+    dependency: transitive
+    description:
+      name: flutter_vless_platform_interface
+      sha256: ead87ef2dc5987d7e3a83c9554a27ba7f8e914e9b2b72477eda3ba0b639fe7e8
+      url: "https://pub.dev"
+    source: hosted
+    version: "1.1.2"
+  flutter_vless_windows:
+    dependency: transitive
+    description:
+      name: flutter_vless_windows
+      sha256: a5cf5c0525a0a5d876e9cff7d921e3ff75c50d7b2ae8768cc976ffc5e8b7357a
+      url: "https://pub.dev"
+    source: hosted
+    version: "1.1.6"
   flutter_web_plugins:
     dependency: transitive
     description: flutter
@@ -141,6 +181,14 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "6.1.0"
+  liquid_glass_easy:
+    dependency: "direct main"
+    description:
+      name: liquid_glass_easy
+      sha256: "48f2147e8b662402ccef9304cf8c216082b7913ad985ea2ac3d4f402b16ab417"
+      url: "https://pub.dev"
+    source: hosted
+    version: "4.3.4"
   matcher:
     dependency: transitive
     description:
@@ -370,6 +418,14 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "1.1.0"
+  yaml:
+    dependency: transitive
+    description:
+      name: yaml
+      sha256: f67cdd8e07d3c6329146aaef1ba043542b3134c12489f553ca9a7435d1068aea
+      url: "https://pub.dev"
+    source: hosted
+    version: "3.1.4"
 sdks:
   dart: ">=3.11.1 <4.0.0"
   flutter: ">=3.38.0"

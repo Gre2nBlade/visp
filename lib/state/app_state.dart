@@ -1,18 +1,37 @@
 import 'dart:async';
 import 'dart:math' as math;
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter/widgets.dart';
 
 import '../core/feedback/haptics.dart';
 import '../core/widgets/blup_visp.dart';
 import '../features/connection/models/connection_models.dart';
+import '../features/connection/services/amneziawg_engine.dart';
 import '../features/connection/services/code_importer.dart';
+import '../features/connection/services/vpn_engine.dart';
+import '../features/connection/services/xray_engine.dart';
 import 'preferences.dart';
 
-/// Центральное состояние приложения: подключения, движок VPN (прототип),
-/// разделяемое состояние выбора/поиска/фильтров серверов и предпочтения.
+/// Центральное состояние приложения: подключения, движки VPN, разделяемое
+/// состояние выбора/поиска/фильтров серверов и предпочтения.
 class AppState extends ChangeNotifier {
-  AppState();
+  AppState() {
+    // Реальные ядра поднимаются только там, где есть нативная платформа.
+    _engines[Protocol.amneziaWG] = AmneziaWgEngine();
+    _engines[Protocol.wireGuard] = AmneziaWgEngine();
+    _engines[Protocol.xrayVless] = XrayEngine();
+    _engines[Protocol.hysteria2] = XrayEngine();
+  }
+
+  /// Ядра по протоколам. Протокол без ядра остаётся в состоянии
+  /// «Нужен модуль», а не подменяется выдуманным подключением.
+  final Map<Protocol, VpnEngine> _engines = {};
+
+  /// Настоящее ядро доступно на этой платформе (на десктопе — нет).
+  bool get hasNativeEngine =>
+      !kIsWeb && defaultTargetPlatform != TargetPlatform.windows;
+
 
   List<ServerHost> _hosts = [];
   List<ProxyRecord> _proxies = [];
@@ -303,7 +322,35 @@ class AppState extends ChangeNotifier {
     await _tick(token, const Duration(milliseconds: 900));
     if (_cancelled(token)) return;
 
-    _setStatus(BlupStatus.connecting, detail: 'Соединение');
+    // Нативное ядро поднимает настоящий туннель. На платформах без ядра
+    // (десктоп, тесты) остаётся прототип, и UI сообщает об этом честно.
+    final engine = _engines[profile.protocol];
+    if (engine != null && hasNativeEngine) {
+      _setStatus(BlupStatus.connecting, detail: 'Соединение');
+      final result = await engine.connect(profile);
+      if (_cancelled(token)) return;
+      if (result != EngineResult.connected) {
+        _fail(_engineError(result, profile));
+        return;
+      }
+      _setEngineState(profile, EngineState.ready);
+      _sessionStart = DateTime.now();
+      _sessionDuration = Duration.zero;
+      _ping = null;
+      _downSpeed = null;
+      _upSpeed = null;
+      _setStatus(BlupStatus.connected, detail: null);
+      _startTicker();
+      return;
+    }
+
+    if (engine == null && hasNativeEngine) {
+      _fail('Для протокола ${profile.protocol.displayName} нет собранного ядра. '
+          'Профиль сохранён, но туннель не поднять.');
+      return;
+    }
+
+    _setStatus(BlupStatus.connecting, detail: 'Прототип подключения');
     await _tick(token, const Duration(milliseconds: 1100));
     if (_cancelled(token)) return;
 
@@ -314,6 +361,26 @@ class AppState extends ChangeNotifier {
     _upSpeed = 0;
     _setStatus(BlupStatus.connected, detail: null);
     _startTicker();
+  }
+
+  /// Понятная причина вместо технического кода движка.
+  String _engineError(EngineResult result, ProtocolProfile profile) {
+    final name = profile.protocol.displayName;
+    switch (result) {
+      case EngineResult.connected:
+        return '';
+      case EngineResult.permissionDenied:
+        return 'Нет разрешения на VPN. Разрешите его в настройках, чтобы '
+            'подключиться через $name.';
+      case EngineResult.invalidConfig:
+        return 'В конфигурации не хватает обязательных параметров '
+            '(приватный ключ и порт). Импортируйте полный конфиг.';
+      case EngineResult.engineMissing:
+        return 'Ядро $name не установлено. Профиль сохранён.';
+      case EngineResult.failed:
+        return 'Не удалось поднять туннель $name. Проверьте конфигурацию и '
+            'доступность сервера.';
+    }
   }
 
   /// Обновляет состояние движка профиля в дереве хостов.
@@ -347,6 +414,11 @@ class AppState extends ChangeNotifier {
     _connectToken++;
     _connectingCancelled = true;
     _ticker?.cancel();
+    // Нативный туннель останавливается ядром, а не только флагом в UI.
+    final engine = selectedProfile == null
+        ? null
+        : _engines[selectedProfile!.protocol];
+    engine?.disconnect();
     // При disconnect старые debug-значения не продолжают выглядеть текущими.
     _ping = null;
     _downSpeed = null;
@@ -397,12 +469,29 @@ class AppState extends ChangeNotifier {
   void _startTicker() {
     _ticker?.cancel();
     final random = math.Random(42);
-    _ticker = Timer.periodic(const Duration(seconds: 1), (_) {
+    _ticker = Timer.periodic(const Duration(seconds: 1), (_) async {
       if (_status != BlupStatus.connected) {
         _ticker?.cancel();
         return;
       }
       _sessionDuration = _sessionDuration + const Duration(seconds: 1);
+
+      // С реальным ядром показания берутся из нативного счётчика, а не
+      // выдумываются: неподтверждённый трафик не отображается.
+      final awg = _engines[selectedProfile?.protocol];
+      if (awg is AmneziaWgEngine && hasNativeEngine) {
+        final state = await awg.pollStatus();
+        if (state != null) {
+          _downSpeed = state.downSpeed == null
+              ? null
+              : state.downSpeed! / (1024 * 1024);
+          _upSpeed = state.upSpeed == null ? null : state.upSpeed! / (1024 * 1024);
+          _trafficPulse = (state.downSpeed ?? 0) > 0 || (state.upSpeed ?? 0) > 0;
+          notifyListeners();
+          return;
+        }
+      }
+
       _ping = 24 + random.nextInt(38);
       final down = (_downSpeed ?? 8) + (random.nextDouble() * 14 - 7);
       final up = (_upSpeed ?? 3) + (random.nextDouble() * 8 - 4);

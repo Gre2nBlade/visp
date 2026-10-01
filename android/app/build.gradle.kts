@@ -24,6 +24,8 @@ android {
         applicationId = "com.absurdstudios.visp.visp"
         // You can update the following values to match your application needs.
         // For more information, see: https://flutter.dev/to/review-gradle-config.
+        // gomobile требует minSdk в диапазоне 21..35; 23 — минимум для
+        // современного VpnService и foreground-уведомлений.
         minSdk = flutter.minSdkVersion
         targetSdk = flutter.targetSdkVersion
         versionCode = flutter.versionCode
@@ -42,3 +44,10 @@ android {
 flutter {
     source = "../.."
 }
+
+dependencies {
+    // Ядро AmneziaWG, собранное из amneziawg-go через gomobile (docs/ENGINES.md).
+    // Граница доверия: Go знает только протокол, Kotlin — только VpnService.
+    implementation(files("libs/amneziawg-bridge.aar"))
+}
+
