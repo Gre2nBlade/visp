@@ -8,9 +8,9 @@ import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_spacing.dart';
 import '../../../core/theme/app_text_styles.dart';
 import '../../../core/widgets/blup_visp.dart';
-import '../../../core/widgets/glass_capsule.dart';
 import '../../../core/widgets/visp_button.dart';
 import '../../../core/widgets/visp_chip.dart';
+import '../../../core/widgets/visp_glass.dart';
 import '../../../core/widgets/visp_input.dart';
 import '../../../core/widgets/visp_card.dart';
 import '../../../core/widgets/visp_list_row.dart';
@@ -188,53 +188,71 @@ class _ConnectedHome extends StatelessWidget {
       child: Column(
         children: [
           Expanded(
-            child: ListView(
-              padding: const EdgeInsets.only(top: AppSpacing.xl),
+            // Blup Visp стоит в геометрическом центре доступной области,
+            // а элементы управления прижаты к низу: центр экрана остаётся
+            // пустым, композиция читается с одного взгляда.
+            child: Stack(
               children: [
-                Center(
-                  child: BlupVisp(
-                    status: state.status,
-                    size: 200,
-                    trafficPulse: state.trafficPulse,
-                    motionReduced: _motionReduced(context),
+                Positioned.fill(
+                  child: Center(
+                    child: BlupVisp(
+                      status: state.status,
+                      size: 208,
+                      trafficPulse: state.trafficPulse,
+                      motionReduced: _motionReduced(context),
+                    ),
                   ),
                 ),
-                const SizedBox(height: AppSpacing.l),
-                _StatusText(state: state, s: s),
-                const SizedBox(height: AppSpacing.m),
-                _ProtocolSelector(state: state),
-                const SizedBox(height: AppSpacing.l),
-                _ConnectButton(state: state, s: s),
-                if (state.errorText != null)
-                  Padding(
-                    padding: const EdgeInsets.fromLTRB(
-                      AppSpacing.xl,
-                      AppSpacing.m,
-                      AppSpacing.xl,
-                      0,
-                    ),
-                    child: Text(
-                      state.errorText!,
-                      textAlign: TextAlign.center,
-                      style: AppTextStyles.small.copyWith(
-                        color: colors.danger,
+                Positioned.fill(
+                  child: Column(
+                    children: [
+                      const SizedBox(height: AppSpacing.xl),
+                      _StatusText(state: state, s: s),
+                      const Spacer(),
+                      if (state.errorText != null)
+                        Padding(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: AppSpacing.xl,
+                          ),
+                          child: Text(
+                            state.errorText!,
+                            textAlign: TextAlign.center,
+                            style: AppTextStyles.small.copyWith(
+                              color: colors.danger,
+                            ),
+                          ),
+                        ),
+                      if (isBlocked)
+                        Padding(
+                          padding: const EdgeInsets.only(bottom: AppSpacing.m),
+                          child: Center(
+                            child: VispChip(
+                              label: s.trafficBlocked,
+                              tone: ChipTone.danger,
+                            ),
+                          ),
+                        ),
+                      _ProtocolSelector(state: state),
+                      const SizedBox(height: AppSpacing.l),
+                      Padding(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: AppSpacing.xl,
+                        ),
+                        child: _ConnectButton(state: state, s: s),
                       ),
-                    ),
+                      if (state.debugVisible) ...[
+                        const SizedBox(height: AppSpacing.l),
+                        Padding(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: AppSpacing.l,
+                          ),
+                          child: _DebugBlock(state: state),
+                        ),
+                      ],
+                      const SizedBox(height: AppSpacing.l),
+                    ],
                   ),
-                if (isBlocked)
-                  Padding(
-                    padding: const EdgeInsets.only(top: AppSpacing.m),
-                    child: Center(
-                      child: VispChip(
-                        label: s.trafficBlocked,
-                        tone: ChipTone.danger,
-                      ),
-                    ),
-                  ),
-                if (state.debugVisible) ...[
-                  const SizedBox(height: AppSpacing.xl),
-                  _DebugBlock(state: state),
-                ],
+                ),
               ],
             ),
           ),
@@ -534,24 +552,22 @@ class _DebugBlock extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final s = context.s;
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: AppSpacing.l),
-      child: GlassCapsule(
-        enabled: state.glass,
-        radius: AppRadius.lAll,
-        padding: const EdgeInsets.all(AppSpacing.l),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                VispIcon(VispIcons.gauge, size: 16),
-                const SizedBox(width: AppSpacing.s),
-                Text(s.debugInfo, style: AppTextStyles.label),
-              ],
-            ),
-            const SizedBox(height: AppSpacing.m),
-            Row(
+    return VispGlassPanel(
+      // Матовое стекло: панель прокручивается с контентом, и преломление
+      // внутри списка давало бы артефакты на краях.
+      enabled: state.glass,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              VispIcon(VispIcons.gauge, size: 16),
+              const SizedBox(width: AppSpacing.s),
+              Text(s.debugInfo, style: AppTextStyles.label),
+            ],
+          ),
+          const SizedBox(height: AppSpacing.m),
+          Row(
               children: [
                 Expanded(
                   child: _DebugStat(
@@ -610,8 +626,7 @@ class _DebugBlock extends StatelessWidget {
             ),
           ],
         ),
-      ),
-    );
+      );
   }
 
   String _formatDuration(Duration d) {
@@ -686,9 +701,8 @@ class _ServerCard extends StatelessWidget {
       padding: const EdgeInsets.fromLTRB(AppSpacing.l, AppSpacing.s, AppSpacing.l, 0),
       child: Column(
         children: [
-          GlassCapsule(
+          VispGlassPanel(
             enabled: state.glass,
-            radius: AppRadius.lAll,
             padding: EdgeInsets.zero,
             child: Material(
               color: Colors.transparent,
@@ -768,20 +782,12 @@ class _ServerCard extends StatelessWidget {
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
       builder: (context) {
-        final colors = SemanticColors.of(context);
-        return GlassCapsule(
+        return VispGlass(
           enabled: state.glass,
-          radius: const BorderRadius.vertical(top: Radius.circular(24)),
-          tintAlpha: 0.9,
+          radius: 24,
           child: Container(
             constraints: BoxConstraints(
               maxHeight: MediaQuery.of(context).size.height * 0.7,
-            ),
-            decoration: BoxDecoration(
-              color: colors.background.withValues(alpha: 0.4),
-              borderRadius: const BorderRadius.vertical(
-                top: Radius.circular(24),
-              ),
             ),
             child: Column(
               mainAxisSize: MainAxisSize.min,

@@ -5,7 +5,7 @@ import '../../core/icons/visp_icon.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_spacing.dart';
 import '../../core/theme/app_text_styles.dart';
-import '../../core/widgets/glass_capsule.dart';
+import '../../core/widgets/visp_glass.dart';
 import 'nav_destination.dart';
 
 /// Плавающий навигационный бар: стеклянная капсула с базовыми вкладками
@@ -48,9 +48,9 @@ class VispFloatingNav extends StatelessWidget {
         child: Row(
           children: [
             Expanded(
-              child: GlassCapsule(
+              child: VispGlassCapsule(
                 enabled: glass,
-                radius: const BorderRadius.all(Radius.circular(_barHeight / 2)),
+                radius: _barHeight / 2,
                 padding: const EdgeInsets.all(6),
                 child: LayoutBuilder(
                   builder: (context, constraints) {
@@ -165,35 +165,35 @@ class _AddButton extends StatelessWidget {
   final bool glass;
   final VoidCallback onTap;
 
+  static const double _size = 56;
+
   @override
   Widget build(BuildContext context) {
     final colors = SemanticColors.of(context);
     return Semantics(
       button: true,
       label: 'Добавить подключение',
-      child: GlassCapsule(
+      // Круглая стеклянная кнопка: спека 11.2 относит кнопку добавления
+      // к навигационному слою, где стекло и живёт.
+      child: VispGlass(
         enabled: glass,
-        radius: const BorderRadius.all(Radius.circular(28)),
-        padding: EdgeInsets.zero,
-        child: Material(
-          color: colors.primary,
-          shape: const CircleBorder(),
-          child: InkWell(
-            customBorder: const CircleBorder(),
-            onTap: () {
-              Haptics.medium(context);
-              onTap();
-            },
-            child: SizedBox(
-              width: 56,
-              height: 56,
-              child: Center(
-                child: VispIcon(
-                  VispIcons.plus,
-                  size: 24,
-                  color: colors.background,
-                  weight: 700,
-                ),
+        radius: _size / 2,
+        distortion: 0.1,
+        child: InkWell(
+          customBorder: const CircleBorder(),
+          onTap: () {
+            Haptics.medium(context);
+            onTap();
+          },
+          child: SizedBox(
+            width: _size,
+            height: _size,
+            child: Center(
+              child: VispIcon(
+                VispIcons.plus,
+                size: 24,
+                color: colors.primary,
+                weight: 700,
               ),
             ),
           ),
