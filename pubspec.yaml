@@ -46,10 +46,15 @@ dev_dependencies:
 # The following section is specific to Flutter packages.
 flutter:
 
-  # The following line ensures that the Material Icons font is
-  # included with your application, so that you can use the icons in
-  # the material Icons class.
   uses-material-design: true
+
+  fonts:
+    # MynaUI Icons (MIT) — https://github.com/praveenjuge/mynaui-icons
+    # Шрифт подключён вместо Material Icons: собственная визуальная
+    # система с единой толщиной штриха (DESIGN.md, «Icons»).
+    - family: mynaui
+      fonts:
+        - asset: assets/fonts/mynaui.ttf
 
   # To add assets to your application, add an assets section, like this:
   # assets:

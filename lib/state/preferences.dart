@@ -4,6 +4,19 @@ enum AppThemeMode { system, light, dark }
 enum UpdateChannel { stable, beta }
 enum HapticPref { auto, minimal, off }
 
+/// Режим поверхностного материала (раздел 11.2).
+///
+/// Три состояния из спеки: обычный материал, матовое стекло и усиленное
+/// преломление. `none` — обычный материал без стекла вообще.
+enum GlassMode {
+  none('Без стекла'),
+  matte('Матовое стекло'),
+  regular('Стекло');
+
+  final String label;
+  const GlassMode(this.label);
+}
+
 /// Локально сохранённые предпочтения.
 ///
 /// Настройки хранятся между запусками: закрепление Studio, тема, стекло,
@@ -25,7 +38,8 @@ class Preferences {
 
   static const _keyThemeMode = 'visp.themeMode';
   static const _keyHaptics = 'visp.haptics';
-  static const _keyGlass = 'visp.glass';
+  static const _keyGlass = 'visp.glassMode';
+  static const _keyGlassLegacy = 'visp.glass';
   static const _keyStudioPinned = 'visp.studioPinned';
   static const _keyProxyInstalled = 'visp.proxyInstalled';
   static const _keyDevRole = 'visp.devRole';
@@ -64,8 +78,24 @@ class Preferences {
 
   static set haptics(HapticPref v) => _p.setString(_keyHaptics, v.name);
 
-  static bool get glass => _p.getBool(_keyGlass) ?? true;
-  static set glass(bool v) => _p.setBool(_keyGlass, v);
+/// Режим стекла. Старое булево значение мигрирует в режим, чтобы
+/// предыдущий выбор пользователя не потерялся.
+static GlassMode get glassMode {
+  final stored = _p.getString(_keyGlass);
+  for (final mode in GlassMode.values) {
+    if (mode.name == stored) return mode;
+  }
+  // Миграция: прежний тумблер «стекло» вкл/выкл.
+  final legacy = _p.getBool(_keyGlassLegacy) ?? true;
+  return legacy ? GlassMode.regular : GlassMode.none;
+}
+
+static set glassMode(GlassMode v) => _p.setString(_keyGlass, v.name);
+
+/// Совместимое чтение старого флага: стекло включено в любом из режимов.
+static bool get glass => glassMode != GlassMode.none;
+static set glass(bool v) =>
+    _p.setString(_keyGlass, (v ? GlassMode.regular : GlassMode.none).name);
 
   static bool get studioPinned => _p.getBool(_keyStudioPinned) ?? false;
   static set studioPinned(bool v) => _p.setBool(_keyStudioPinned, v);

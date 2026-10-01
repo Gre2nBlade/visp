@@ -62,126 +62,202 @@ enum VispIcons {
   share,
   heart,
   uploadCloud,
+  monitor,
 }
 
+/// Кодировка глифов MynaUI Icons (MIT).
+///
+/// FontPackage: mynaui · шестерёнчатый контур 1.5 · имена из packages/icons.
+class MynaUi {
+  MynaUi._();
+
+  /// Начертание иконок подключается в pubspec (`fonts:` → family: mynaui).
+  static const String fontFamily = 'mynaui';
+
+  static const IconData home = IconData(0xec49, fontFamily: fontFamily);
+  static const IconData server = IconData(0xee32, fontFamily: fontFamily);
+  static const IconData settings = IconData(0xeb55, fontFamily: fontFamily);
+  static const IconData studio = IconData(0xec70, fontFamily: fontFamily);
+  static const IconData plugins = IconData(0xedee, fontFamily: fontFamily);
+  static const IconData proxy = IconData(0xef17, fontFamily: fontFamily);
+  static const IconData plus = IconData(0xede8, fontFamily: fontFamily);
+  static const IconData shieldCheck = IconData(0xee3c, fontFamily: fontFamily);
+  static const IconData shield = IconData(0xee44, fontFamily: fontFamily);
+  static const IconData database = IconData(0xeb7e, fontFamily: fontFamily);
+  static const IconData globe = IconData(0xec18, fontFamily: fontFamily);
+  static const IconData route = IconData(0xee00, fontFamily: fontFamily);
+  static const IconData flask = IconData(0xebe8, fontFamily: fontFamily);
+  static const IconData alert = IconData(0xeb7b, fontFamily: fontFamily);
+  static const IconData check = IconData(0xeaf0, fontFamily: fontFamily);
+  static const IconData checkCircle = IconData(0xeae8, fontFamily: fontFamily);
+  static const IconData file = IconData(0xebd4, fontFamily: fontFamily);
+  static const IconData qr = IconData(0xee1d, fontFamily: fontFamily);
+  static const IconData key = IconData(0xec67, fontFamily: fontFamily);
+  static const IconData send = IconData(0xee3a, fontFamily: fontFamily);
+  static const IconData chevronDown = IconData(0xeafc, fontFamily: fontFamily);
+  static const IconData chevronRight = IconData(0xeb04, fontFamily: fontFamily);
+  static const IconData edit = IconData(0xedce, fontFamily: fontFamily);
+  static const IconData back = IconData(0xea42, fontFamily: fontFamily);
+  static const IconData search = IconData(0xee2f, fontFamily: fontFamily);
+  static const IconData filter = IconData(0xebd9, fontFamily: fontFamily);
+  static const IconData copy = IconData(0xeb61, fontFamily: fontFamily);
+  static const IconData paste = IconData(0xeb22, fontFamily: fontFamily);
+  static const IconData lock = IconData(0xed50, fontFamily: fontFamily);
+  static const IconData wifi = IconData(0xeefc, fontFamily: fontFamily);
+  static const IconData signal = IconData(0xed82, fontFamily: fontFamily);
+  static const IconData clock = IconData(0xea0f, fontFamily: fontFamily);
+  static const IconData gauge = IconData(0xea05, fontFamily: fontFamily);
+  static const IconData download = IconData(0xeba4, fontFamily: fontFamily);
+  static const IconData upload = IconData(0xeed7, fontFamily: fontFamily);
+  static const IconData delete = IconData(0xeeb6, fontFamily: fontFamily);
+  static const IconData person = IconData(0xeee3, fontFamily: fontFamily);
+  static const IconData users = IconData(0xeee5, fontFamily: fontFamily);
+  static const IconData bell = IconData(0xea81, fontFamily: fontFamily);
+  static const IconData info = IconData(0xec5c, fontFamily: fontFamily);
+  static const IconData warning = IconData(0xeb7b, fontFamily: fontFamily);
+  static const IconData link = IconData(0xed38, fontFamily: fontFamily);
+  static const IconData mail = IconData(0xed56, fontFamily: fontFamily);
+  static const IconData code = IconData(0xeb4d, fontFamily: fontFamily);
+  static const IconData close = IconData(0xef05, fontFamily: fontFamily);
+  static const IconData dpi = IconData(0xee3c, fontFamily: fontFamily);
+  static const IconData theme = IconData(0xee85, fontFamily: fontFamily);
+  static const IconData language = IconData(0xec18, fontFamily: fontFamily);
+  static const IconData security = IconData(0xed50, fontFamily: fontFamily);
+  static const IconData device = IconData(0xed86, fontFamily: fontFamily);
+  static const IconData monitor = IconData(0xed87, fontFamily: fontFamily);
+  static const IconData bug = IconData(0xeb7b, fontFamily: fontFamily);
+  static const IconData share = IconData(0xee3a, fontFamily: fontFamily);
+  static const IconData heart = IconData(0xeb7b, fontFamily: fontFamily);
+  static const IconData uploadCloud = IconData(0xeed7, fontFamily: fontFamily);
+  static const IconData plug = IconData(0xef17, fontFamily: fontFamily);
+  static const IconData refresh = IconData(0xee00, fontFamily: fontFamily);
+}
+
+/// Семантические имена → глифы MynaUI.
+///
+/// Feature-код работает только с именами: замена набора иконок не
+/// расходится по приложению (DESIGN.md, «Icons»).
 extension VispIconsData on VispIcons {
   IconData get data {
     switch (this) {
       case VispIcons.home:
-        return Icons.home_outlined;
+        return MynaUi.home;
       case VispIcons.server:
-        return Icons.dns_outlined;
+        return MynaUi.server;
       case VispIcons.settings:
-        return Icons.settings_outlined;
+        return MynaUi.settings;
       case VispIcons.studio:
-        return Icons.dashboard_outlined;
+        return MynaUi.studio;
       case VispIcons.plugins:
-        return Icons.extension_outlined;
+        return MynaUi.plugins;
       case VispIcons.proxy:
-        return Icons.send_outlined;
+        return MynaUi.proxy;
       case VispIcons.plus:
-        return Icons.add;
+        return MynaUi.plus;
       case VispIcons.shieldCheck:
-        return Icons.verified_user_outlined;
+        return MynaUi.shieldCheck;
       case VispIcons.shield:
-        return Icons.shield_outlined;
+        return MynaUi.shield;
       case VispIcons.plug:
-        return Icons.power_outlined;
+        return MynaUi.plug;
       case VispIcons.database:
-        return Icons.storage_outlined;
+        return MynaUi.database;
       case VispIcons.globe:
-        return Icons.public_outlined;
+        return MynaUi.globe;
       case VispIcons.route:
-        return Icons.alt_route_outlined;
+        return MynaUi.route;
       case VispIcons.refresh:
-        return Icons.refresh_outlined;
+        return MynaUi.refresh;
       case VispIcons.flask:
-        return Icons.science_outlined;
+        return MynaUi.flask;
       case VispIcons.alert:
-        return Icons.error_outline;
+        return MynaUi.alert;
       case VispIcons.check:
-        return Icons.check;
+        return MynaUi.check;
       case VispIcons.checkCircle:
-        return Icons.check_circle_outline;
+        return MynaUi.checkCircle;
       case VispIcons.file:
-        return Icons.insert_drive_file_outlined;
+        return MynaUi.file;
       case VispIcons.qr:
-        return Icons.qr_code_scanner_outlined;
+        return MynaUi.qr;
       case VispIcons.key:
-        return Icons.vpn_key_outlined;
+        return MynaUi.key;
       case VispIcons.send:
-        return Icons.send_outlined;
+        return MynaUi.send;
       case VispIcons.chevronDown:
-        return Icons.keyboard_arrow_down;
+        return MynaUi.chevronDown;
       case VispIcons.chevronRight:
-        return Icons.keyboard_arrow_right;
+        return MynaUi.chevronRight;
       case VispIcons.edit:
-        return Icons.edit_outlined;
+        return MynaUi.edit;
       case VispIcons.back:
-        return Icons.arrow_back;
+        return MynaUi.back;
       case VispIcons.search:
-        return Icons.search;
+        return MynaUi.search;
       case VispIcons.filter:
-        return Icons.filter_list;
+        return MynaUi.filter;
       case VispIcons.copy:
-        return Icons.content_copy;
+        return MynaUi.copy;
       case VispIcons.paste:
-        return Icons.content_paste_outlined;
+        return MynaUi.paste;
       case VispIcons.lock:
-        return Icons.lock_outline;
+        return MynaUi.lock;
       case VispIcons.wifi:
-        return Icons.wifi_outlined;
+        return MynaUi.wifi;
       case VispIcons.signal:
-        return Icons.signal_cellular_alt;
+        return MynaUi.signal;
       case VispIcons.clock:
-        return Icons.schedule_outlined;
+        return MynaUi.clock;
       case VispIcons.gauge:
-        return Icons.speed_outlined;
+        return MynaUi.gauge;
       case VispIcons.download:
-        return Icons.download_outlined;
+        return MynaUi.download;
       case VispIcons.upload:
-        return Icons.upload_outlined;
+        return MynaUi.upload;
       case VispIcons.delete:
-        return Icons.delete_outline;
+        return MynaUi.delete;
       case VispIcons.person:
-        return Icons.person_outline;
+        return MynaUi.person;
       case VispIcons.users:
-        return Icons.group_outlined;
+        return MynaUi.users;
       case VispIcons.bell:
-        return Icons.notifications_outlined;
+        return MynaUi.bell;
       case VispIcons.info:
-        return Icons.info_outline;
+        return MynaUi.info;
       case VispIcons.warning:
-        return Icons.warning_amber_outlined;
+        return MynaUi.warning;
       case VispIcons.link:
-        return Icons.link;
+        return MynaUi.link;
       case VispIcons.mail:
-        return Icons.mail_outline;
+        return MynaUi.mail;
       case VispIcons.code:
-        return Icons.code;
+        return MynaUi.code;
       case VispIcons.close:
-        return Icons.close;
+        return MynaUi.close;
       case VispIcons.dpi:
-        return Icons.network_check_outlined;
+        return MynaUi.dpi;
       case VispIcons.theme:
-        return Icons.palette;
+        return MynaUi.theme;
       case VispIcons.language:
-        return Icons.language;
+        return MynaUi.language;
       case VispIcons.security:
-        return Icons.security;
+        return MynaUi.security;
       case VispIcons.device:
-        return Icons.devices;
+        return MynaUi.device;
+      case VispIcons.monitor:
+        return MynaUi.monitor;
       case VispIcons.bug:
-        return Icons.bug_report;
+        return MynaUi.bug;
       case VispIcons.share:
-        return Icons.share_outlined;
+        return MynaUi.share;
       case VispIcons.heart:
-        return Icons.favorite_outline;
+        return MynaUi.heart;
       case VispIcons.uploadCloud:
-        return Icons.cloud_upload_outlined;
+        return MynaUi.uploadCloud;
     }
   }
 }
+
 
 /// Виджет-адаптер для иконок Visp.
 ///

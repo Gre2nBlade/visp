@@ -102,12 +102,17 @@ class VispGlassCapsule extends StatelessWidget {
     super.key,
     required this.child,
     this.enabled = true,
+    this.matte = false,
     this.radius = 28,
     this.padding,
   });
 
   final Widget child;
   final bool enabled;
+
+  /// Матовое стекло: иней и световой край без преломления фона.
+  final bool matte;
+
   final double radius;
   final EdgeInsetsGeometry? padding;
 
@@ -115,6 +120,7 @@ class VispGlassCapsule extends StatelessWidget {
   Widget build(BuildContext context) {
     return VispGlass(
       enabled: enabled,
+      matte: matte,
       radius: radius,
       // Капсула плавает над контентом: чуть сильнее преломление и иней.
       blurSigma: 16,

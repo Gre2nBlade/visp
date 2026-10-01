@@ -11,6 +11,7 @@ import '../../core/widgets/visp_switch.dart';
 import '../../core/widgets/visp_toast.dart';
 import '../../l10n/strings.dart';
 import '../../state/app_state.dart';
+import 'widgets/glass_mode_picker.dart';
 import '../../state/preferences.dart';
 
 /// Персонализация (раздел 11): тема, материал-стекло, каталог тем и иконок.
@@ -61,27 +62,20 @@ class PersonalizationScreen extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Row(
-                    children: [
-                      Expanded(
-                        child: Text(s.glass, style: AppTextStyles.h2),
-                      ),
-                      VispSwitch(
-                        value: state.glass,
-                        onChanged: state.setGlass,
-                      ),
-                    ],
-                  ),
+                  Text(s.glass, style: AppTextStyles.h2),
                   const SizedBox(height: AppSpacing.xs + 2),
                   Text(
-                    'Стекло — материал навигационной капсулы, кнопки добавления '
-                    'и шторки серверов, а не смена всей палитры. Текст, цифры '
-                    'скорости и поля ввода остаются резкими.',
+                    'Стекло — материал навигационной капсулы, кнопки '
+                    'добавления и шторки серверов, а не смена всей палитры. '
+                    'Матовое не преломляет фон и экономнее по ресурсам. '
+                    'Текст и цифры остаются резкими.',
                     style: AppTextStyles.small.copyWith(
                       color: SemanticColors.of(context).textSecondary,
                       height: 1.5,
                     ),
                   ),
+                  const SizedBox(height: AppSpacing.m),
+                  GlassModePicker(state: state),
                 ],
               ),
             ),

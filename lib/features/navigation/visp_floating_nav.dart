@@ -6,6 +6,7 @@ import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_spacing.dart';
 import '../../core/theme/app_text_styles.dart';
 import '../../core/widgets/visp_glass.dart';
+import '../../state/preferences.dart';
 import 'nav_destination.dart';
 
 /// Плавающий навигационный бар: стеклянная капсула с базовыми вкладками
@@ -21,14 +22,16 @@ class VispFloatingNav extends StatelessWidget {
     required this.currentIndex,
     required this.onTap,
     required this.onAdd,
-    required this.glass,
+    required this.glassMode,
   });
 
   final List<NavDestination> destinations;
   final int currentIndex;
   final ValueChanged<int> onTap;
   final VoidCallback onAdd;
-  final bool glass;
+
+  /// Режим стекла: без стекла, матовое или обычное (раздел 11.2).
+  final GlassMode glassMode;
 
   static const _barHeight = 60.0;
 
@@ -49,7 +52,8 @@ class VispFloatingNav extends StatelessWidget {
           children: [
             Expanded(
               child: VispGlassCapsule(
-                enabled: glass,
+                enabled: glassMode != GlassMode.none,
+                matte: glassMode == GlassMode.matte,
                 radius: _barHeight / 2,
                 padding: const EdgeInsets.all(6),
                 child: LayoutBuilder(
@@ -104,7 +108,7 @@ class VispFloatingNav extends StatelessWidget {
               ),
             ),
             const SizedBox(width: AppSpacing.s + 2),
-            _AddButton(glass: glass, onTap: onAdd),
+            _AddButton(glassMode: glassMode, onTap: onAdd),
           ],
         ),
       ),
@@ -167,9 +171,9 @@ class _NavTab extends StatelessWidget {
 }
 
 class _AddButton extends StatelessWidget {
-  const _AddButton({required this.glass, required this.onTap});
+  const _AddButton({required this.glassMode, required this.onTap});
 
-  final bool glass;
+  final GlassMode glassMode;
   final VoidCallback onTap;
 
   static const double _size = 56;
@@ -183,7 +187,8 @@ class _AddButton extends StatelessWidget {
       // Круглая стеклянная кнопка: спека 11.2 относит кнопку добавления
       // к навигационному слою, где стекло и живёт.
       child: VispGlass(
-        enabled: glass,
+        enabled: glassMode != GlassMode.none,
+        matte: glassMode == GlassMode.matte,
         radius: _size / 2,
         distortion: 0.1,
         child: InkWell(

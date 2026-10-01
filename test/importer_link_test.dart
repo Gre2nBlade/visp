@@ -38,4 +38,34 @@ void main() {
     final p = CodeImporter.parse('qwerty123');
     expect(p.error, contains('VISP-'));
   });
+
+  group('vpn:// не угадывается как протокол', () {
+    test('vpn:// не превращается в VLESS', () {
+      final p = CodeImporter.parse('vpn://2.27.63.201:51820?type=amnezia');
+      expect(p.kind, ImportKind.unknown);
+      // Ни одного профиля: приложение не имеет права угадывать протокол.
+      expect(p.entries, isEmpty);
+    });
+
+    test('подсказка объясняет, что нужен конкретный протокол', () {
+      final p = CodeImporter.parse('vpn://server');
+      expect(p.error, contains('vpn://'));
+      expect(p.error, contains('hysteria2://'));
+    });
+
+    test('настоящие схемы продолжают работать', () {
+      expect(
+        CodeImporter.parse('hysteria2://h.com:8443/?auth=t').entries.single.protocol,
+        Protocol.hysteria2,
+      );
+      expect(
+        CodeImporter.parse('wireguard://h.com:51820').entries.single.protocol,
+        Protocol.wireGuard,
+      );
+      expect(
+        CodeImporter.parse('amneziawg://h.com:51820').entries.single.protocol,
+        Protocol.amneziaWG,
+      );
+    });
+  });
 }

@@ -146,13 +146,6 @@ class SettingsScreen extends StatelessWidget {
                   trailing: const VispIcon(VispIcons.chevronRight, size: 18),
                   onTap: () => PersonalizationScreen.open(context),
                 ),
-                _SwitchRow(
-                  title: s.glass,
-                  description: s.glassDesc,
-                  icon: VispIcons.shield,
-                  value: state.glass,
-                  onChanged: state.setGlass,
-                ),
               ],
             ),
             VispSectionHeader(text: s.groupApp),

@@ -3,6 +3,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'package:visp/main.dart';
+import 'package:visp/core/icons/visp_icon.dart';
 import 'package:visp/core/widgets/blup_visp.dart';
 import 'package:visp/features/navigation/visp_floating_nav.dart';
 
@@ -29,11 +30,20 @@ void main() {
     expect(find.text('Подключиться'), findsOneWidget);
   });
 
+  test('иконки Visp ссылаются на подключённый шрифт mynaui', () {
+    for (final icon in VispIcons.values) {
+      expect(icon.data.fontFamily, 'mynaui',
+          reason: 'иконка ${icon.name} должна использовать MynaUI');
+      expect(icon.data.codePoint, isNonZero);
+    }
+  });
+
   testWidgets('Кнопка «+» открывает экран добавления подключения',
       (tester) async {
     await bootstrap(tester);
 
-    await tester.tap(find.byIcon(Icons.add));
+    // Иконки берутся из MynaUI, поэтому ищем по глифу, а не по Icons.add.
+    await tester.tap(find.byIcon(MynaUi.plus));
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 400));
 

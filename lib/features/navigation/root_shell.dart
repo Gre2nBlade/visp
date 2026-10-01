@@ -65,7 +65,7 @@ class _RootShellState extends State<RootShell> {
         currentIndex: _index,
         onTap: (i) => setState(() => _index = i),
         onAdd: _onAdd,
-        glass: state.glass,
+        glassMode: state.glassMode,
       ),
     );
   }

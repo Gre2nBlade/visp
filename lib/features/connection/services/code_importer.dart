@@ -209,16 +209,22 @@ class CodeImporter {
   ];
 
   static Protocol? _protocolOf(String lower) {
+    // Схемы перечислены явно и только те, где протокол известен из самой
+    // ссылки. Общая схема vpn:// намеренно отсутствует: она не является
+    // единым стандартом, и приравнивать её к VLESS значило бы угадывать
+    // (раздел 2.2). Для неё есть отдельная подсказка в _protocolHints.
     for (final entry in const [
       ('vless://', Protocol.xrayVless),
       ('vmess://', Protocol.vmess),
       ('trojan://', Protocol.trojan),
       ('hysteria2://', Protocol.hysteria2),
+      ('hy2://', Protocol.hysteria2),
       ('ss://', Protocol.shadowsocks),
       ('olcrtc://', Protocol.olcRtc),
       ('webrtc://', Protocol.olcRtc),
       ('wireguard://', Protocol.wireGuard),
-      ('vpn://', Protocol.xrayVless),
+      ('awg://', Protocol.amneziaWG),
+      ('amneziawg://', Protocol.amneziaWG),
     ]) {
       if (lower.startsWith(entry.$1)) return entry.$2;
     }

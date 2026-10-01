@@ -68,7 +68,7 @@ class AppState extends ChangeNotifier {
   // ---- Настройки ----
   AppThemeMode _themeMode = AppThemeMode.system;
   HapticPref _haptics = HapticPref.auto;
-  bool _glass = true;
+  GlassMode _glassMode = GlassMode.regular;
   bool _studioPinned = false;
   bool _proxyInstalled = false;
   bool _devRole = false;
@@ -103,7 +103,11 @@ class AppState extends ChangeNotifier {
 
   AppThemeMode get themeMode => _themeMode;
   HapticPref get haptics => _haptics;
-  bool get glass => _glass;
+  /// Режим стекла: без стекла, матовое или обычное (раздел 11.2).
+  GlassMode get glassMode => _glassMode;
+
+  /// Стекло включено в любом из режимов — для совместимости с UI.
+  bool get glass => _glassMode != GlassMode.none;
   bool get studioPinned => _studioPinned;
   bool get proxyInstalled => _proxyInstalled;
   bool get devRole => _devRole;
@@ -148,7 +152,7 @@ class AppState extends ChangeNotifier {
         : _haptics == HapticPref.off
             ? HapticStrength.off
             : HapticStrength.auto;
-    _glass = Preferences.glass;
+    _glassMode = Preferences.glassMode;
     _studioPinned = Preferences.studioPinned;
     _proxyInstalled = Preferences.proxyInstalled;
     _devRole = Preferences.devRole;
@@ -788,9 +792,9 @@ class AppState extends ChangeNotifier {
     notifyListeners();
   }
 
-  void setGlass(bool value) {
-    _glass = value;
-    Preferences.glass = value;
+  void setGlassMode(GlassMode value) {
+    _glassMode = value;
+    Preferences.glassMode = value;
     notifyListeners();
   }
 
@@ -851,7 +855,7 @@ class AppState extends ChangeNotifier {
     _proxyInstalled = false;
     _devRole = false;
     _studioPinned = false;
-    _glass = true;
+    _glassMode = GlassMode.regular;
     _debugVisible = false;
     _killSwitch = false;
     _autostart = false;
