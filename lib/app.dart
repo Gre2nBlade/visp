@@ -61,8 +61,11 @@ class _Splash extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // Заставка следует выбранной теме, а не всегда тёмная: на светлой теме
+    // тёмная вспышка выглядит как ошибка загрузки.
+    final colors = SemanticColors.of(context);
     return Scaffold(
-      backgroundColor: SemanticColors.dark.background,
+      backgroundColor: colors.background,
       body: Center(
         child: Column(
           mainAxisSize: MainAxisSize.min,
@@ -76,7 +79,7 @@ class _Splash extends StatelessWidget {
             Text(
               'Visp',
               style: AppTextStyles.display.copyWith(
-                color: SemanticColors.dark.textPrimary,
+                color: colors.textPrimary,
               ),
             ),
           ],

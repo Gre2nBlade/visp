@@ -47,7 +47,10 @@ class AddConnectionScreen extends StatefulWidget {
   ) async {
     final preview = CodeImporter.parse(code);
     if (preview.kind == ImportKind.unknown) {
-      VispToast.showError(context, context.s.formatUnsupported);
+      // Показываем то, что именно не так: у парсера уже есть готовое
+      // объяснение, а без него пользователь видит безликое «не поддерживается».
+      final reason = preview.error ?? context.s.formatUnsupported;
+      VispToast.showError(context, reason, actionLabel: context.s.paste);
       return false;
     }
     if (preview.kind == ImportKind.devActivation) {

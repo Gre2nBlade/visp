@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:flutter_test/flutter_test.dart';
 
 import 'package:visp/features/connection/models/connection_models.dart';
@@ -41,15 +43,59 @@ void main() {
       expect(preview.entries.first.proxyType, ProxyType.webProxy);
     });
 
-    test('подписка распознаётся по схеме и по base64', () {
+    test('подписка разбирается по содержимому, а не по одному лишь факту ввода', () {
+      // Подписка из нескольких ссылок в base64: разбираются все профили.
+      final payload = base64.encode(utf8.encode(
+        'vless://uuid@a.example.com:443?security=reality&pbk=k&sid=s#Первый\n'
+        'hysteria2://b.example.com:8443/?auth=tok#Второй\n'
+        'trojan://pwd@c.example.com:443#Третий',
+      ));
+
+      final preview = CodeImporter.parse(payload);
+      expect(preview.kind, ImportKind.subscription);
+      expect(preview.entries, hasLength(3));
+      // Имена из ссылок сохраняются, а не «Профиль 1/2/3».
       expect(
-        CodeImporter.parse('https://example.com/sub/token').kind,
-        ImportKind.subscription,
+        preview.entries.map((e) => e.title),
+        containsAll(<String>['Первый', 'Второй', 'Третий']),
       );
-      expect(
-        CodeImporter.parse('dmVzczovL3NvbWUtc2VydmVyLmNvbTo0NDM=').kind,
-        ImportKind.subscription,
+      expect(preview.entries.map((e) => e.protocol), contains(Protocol.hysteria2));
+    });
+
+    test('подписка принимает обычные ссылки без base64-обёртки', () {
+      final preview = CodeImporter.parse(
+        'vless://uuid@a.example.com:443?security=tls#Один\n'
+        'vmess://eyJhZGQiOiJiLmV4YW1wbGUuY29tIiwicG9ydCI6IjQ0MyIsImlkIjoieCJ9',
       );
+      expect(preview.kind, ImportKind.subscription);
+      expect(preview.entries.length, 2);
+    });
+
+    test('подписка разбирает sing-box JSON с outbound', () {
+      const json = '{"outbounds":['
+          '{"tag":"Amnezia","protocol":"vless","address":"1.2.3.4",'
+          '"port":443,"settings":{"vnext":[{"address":"1.2.3.4","port":443,'
+          '"users":[{"id":"u-1","flow":"xtls-rprx-vision"}]}]}}]}';
+      final preview = CodeImporter.parse(json);
+      expect(preview.kind, ImportKind.subscription);
+      final entry = preview.entries.single;
+      expect(entry.protocol, Protocol.xrayVless);
+      expect(entry.config!.address, '1.2.3.4');
+      expect(entry.config!.uuid, 'u-1');
+    });
+
+    test('подписка без протоколов честно объясняет, что не найдено', () {
+      final preview = CodeImporter.parse('просто текст без ссылок');
+      expect(preview.kind, ImportKind.unknown);
+      expect(preview.error, contains('ссылк'));
+    });
+
+    test('URL подписки не принимается за содержимое подписки', () {
+      // Ссылка на подписку — это адрес, а не профили. Без загрузки сети
+      // разбирать нечего, и приложение обязано сказать об этом прямо.
+      final preview = CodeImporter.parse('https://example.com/sub/token');
+      expect(preview.kind, ImportKind.unknown);
+      expect(preview.error, contains('ссылк'));
     });
 
     test('неизвестный формат не угадывается', () {

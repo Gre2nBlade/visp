@@ -67,7 +67,6 @@ class PersonalizationScreen extends StatelessWidget {
                   Text(
                     'Стекло — материал навигационной капсулы, кнопки '
                     'добавления и шторки серверов, а не смена всей палитры. '
-                    'Матовое не преломляет фон и экономнее по ресурсам. '
                     'Текст и цифры остаются резкими.',
                     style: AppTextStyles.small.copyWith(
                       color: SemanticColors.of(context).textSecondary,

@@ -50,11 +50,15 @@ flutter:
 
   fonts:
     # MynaUI Icons (MIT) — https://github.com/praveenjuge/mynaui-icons
-    # Шрифт подключён вместо Material Icons: собственная визуальная
-    # система с единой толщиной штриха (DESIGN.md, «Icons»).
+    # Два начертания с одинаковой нумерацией глифов: тонкий контур
+    # (outline) для обычных элементов и заливка (solid) для активных
+    # состояний (DESIGN.md, «Icons»).
     - family: mynaui
       fonts:
         - asset: assets/fonts/mynaui.ttf
+    - family: mynaui_solid
+      fonts:
+        - asset: assets/fonts/mynaui-solid.ttf
 
   # To add assets to your application, add an assets section, like this:
   # assets:

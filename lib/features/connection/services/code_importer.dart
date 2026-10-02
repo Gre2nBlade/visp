@@ -137,6 +137,7 @@ class CodeImporter {
     }
 
     final lower = input.toLowerCase();
+    final trimmed = input.trimLeft();
     if (lower.startsWith('visp://')) {
       return _parseVispOffline(input);
     }
@@ -152,8 +153,9 @@ class CodeImporter {
     }
 
     final protocol = _protocolOf(lower);
-    if (protocol != null) {
-      return _parseProtocolLink(input, protocol);
+    // JSON-подобное содержимое проверяем до схем: sing-box/Xray начинаются с «{».
+    if (trimmed.startsWith('{')) {
+      return _parseSubscription(input);
     }
 
     // WireGuard/AmneziaWG добавляются конфигурационным файлом (раздел 2.4).
@@ -161,13 +163,37 @@ class CodeImporter {
       return parseConfig(input);
     }
 
+    // Ссылка на подписку — это адрес, а не содержимое. Разбирать её нечем
+    // без загрузки, поэтому честно объясняем, что нужно.
     if (lower.startsWith('http://') || lower.startsWith('https://')) {
+      return ImportPreview(
+        kind: ImportKind.unknown,
+        title: 'Нужна подписка или её содержимое',
+        sourceLabel: '',
+        entries: const [],
+        error: 'Это адрес подписки, а не её содержимое. Откройте ссылку и '
+            'вставьте полученный список кодов, либо экспортируйте подписку в файл.',
+      );
+    }
+
+    // Одна схема в начале — обычная ссылка протокола.
+    if (protocol != null && !input.contains('\n')) {
+      return _parseProtocolLink(input, protocol);
+    }
+
+    // Многострочный ввод: список ссылок или подписка целиком.
+    if (input.contains('\n') || input.contains('\r')) {
       return _parseSubscription(input);
     }
 
     // Быть может, это base64-подписка без схемы.
     if (_looksLikeBase64(input)) {
       return _parseSubscription(input, decoded: true);
+    }
+
+    // Одиночная ссылка протокола, разбор которой не сработал выше.
+    if (protocol != null) {
+      return _parseProtocolLink(input, protocol);
     }
 
     return ImportPreview(
@@ -232,14 +258,28 @@ class CodeImporter {
   }
 
   static bool _looksLikeBase64(String input) {
+    // Проверяем через саму расшифровку, а не по длине: подписки часто
+    // приходят без padding, и проверка «длина кратна 4» их отбрасывала.
+    if (_tryDecodeBase64Body(input) == null) return false;
     final cleaned = input.replaceAll(RegExp(r'\s'), '');
-    if (cleaned.length < 24 || cleaned.length % 4 != 0) return false;
+    if (cleaned.length < 16) return false;
+    if (RegExp(r'^[a-zA-Z0-9+/=:\-_\s]+$').hasMatch(cleaned) == false) {
+      return false;
+    }
     try {
-      final decoded = utf8.decode(base64.decode(cleaned));
+      final decoded = utf8.decode(base64.decode(_normalizeBase64(cleaned)));
       return decoded.contains('://') || decoded.contains('proxies:');
     } catch (_) {
       return false;
     }
+  }
+
+  /// Дополняет base64 до длины, кратной четырём, и допускает URL-безопасный алфавит.
+  static String _normalizeBase64(String input) {
+    var cleaned = input.replaceAll(RegExp(r'\s'), '');
+    cleaned = cleaned.replaceAll('-', '+').replaceAll('_', '/');
+    final padding = (4 - cleaned.length % 4) % 4;
+    return cleaned + ('=' * padding);
   }
 
   /// Оффлайн-код: параметры подключения внутри кода, до 4 подключений.
@@ -603,33 +643,162 @@ class CodeImporter {
     return lower.contains('[interface]') && lower.contains('[peer]');
   }
 
-  static ImportPreview _parseSubscription(String input, {bool decoded = false}) {
+  /// Подписка: разбирает всё, что внутри, а не придумывает профили.
+  ///
+  /// Поддерживаются три формы содержимого (раздел 2.5):
+  ///  - base64 со списком ссылок построчно;
+  ///  - список ссылок или base64-ссылок без обёртки;
+  ///  - sing-box / Xray JSON с массивом outbound.
+  static ImportPreview _parseSubscription(
+    String input, {
+    bool decoded = false,
+  }) {
+    // Декодирование выполняется здесь всегда: вызывающая сторона могла лишь
+  // догадаться, что ввод — base64, и передать флаг decoded.
+  final content = _tryDecodeBase64Body(input) ?? input;
+
+    final entries = <PreviewEntry>[];
+    var sawStructured = false;
+
+    // 1. JSON-подобное содержимое: outbounds / proxies.
+    final trimmed = content.trimLeft();
+    if (trimmed.startsWith('{')) {
+      try {
+        final json = jsonDecode(trimmed) as Map<String, dynamic>;
+        final list = (json['outbounds'] as List?) ?? (json['proxies'] as List?);
+        if (list != null) {
+          sawStructured = true;
+          for (final item in list) {
+            if (item is Map<String, dynamic>) {
+              final entry = _entryFromJsonOutbound(item, entries.length);
+              if (entry != null) entries.add(entry);
+            }
+          }
+        }
+      } catch (_) {
+        // Не JSON: пробуем как список ссылок.
+      }
+    }
+
+    // 2. Ссылки построчно — основная форма большинства подписок.
+    if (entries.isEmpty) {
+      var index = 0;
+      for (final rawLine in content.split(RegExp(r'[\r\n]+'))) {
+        var line = rawLine.trim();
+        if (line.isEmpty) continue;
+        // Подписка иногда отдаёт base64-ссылку внутри base64-обёртки.
+        // Декодируем только если строка сама по себе не является ссылкой
+        // протокола: иначе «vless://…» ошибочно уйдёт в декодирование.
+        if (_protocolOf(line.toLowerCase()) == null) {
+          final inner = _tryDecodeBase64Body(line);
+          if (inner != null && inner.contains('://')) {
+            line = inner.trim();
+          }
+        }
+        final protocol = _protocolOf(line.toLowerCase());
+        if (protocol == null) continue;
+
+        final parsed = _parseProtocolLink(line, protocol);
+        for (final e in parsed.entries) {
+          entries.add(e.copyWith(id: 'sub-${index++}'));
+        }
+        if (entries.length >= 200) break; // Разумный предел на одну подписку.
+      }
+    }
+
+    if (entries.isEmpty) {
+      return ImportPreview(
+        kind: ImportKind.unknown,
+        title: 'Подписка без профилей',
+        sourceLabel: '',
+        entries: const [],
+        error: sawStructured
+            ? 'В содержимом нет поддерживаемых протоколов'
+            : 'Не нашлось ни одной ссылки протокола. Поддерживаются vless://, '
+                'vmess://, trojan://, ss://, hysteria2:// и конфигурации '
+                'WireGuard/AmneziaWG.',
+      );
+    }
+
     return ImportPreview(
       kind: ImportKind.subscription,
       title: decoded ? 'Подписка (base64)' : 'Подписка',
-      sourceLabel: 'Обновляемый источник',
-      entries: const [
-        PreviewEntry(
-          id: 'sub-1',
-          title: 'Профиль 1',
-          subtitle: 'AmneziaWG · 51820',
-          protocol: Protocol.amneziaWG,
-        ),
-        PreviewEntry(
-          id: 'sub-2',
-          title: 'Профиль 2',
-          subtitle: 'Hysteria 2 · 8443',
-          protocol: Protocol.hysteria2,
-        ),
-        PreviewEntry(
-          id: 'sub-3',
-          title: 'Профиль 3',
-          subtitle: 'Shadowsocks · требуется модуль',
-          protocol: Protocol.shadowsocks,
-          needsModule: true,
-        ),
-      ],
-      hasRoutingRules: true,
+      sourceLabel: 'Обновляемый источник · ${entries.length} профилей',
+      entries: entries,
+      hasRoutingRules: false,
+    );
+  }
+
+  /// Возвращает декодированное тело, если вход действительно base64.
+  static String? _tryDecodeBase64Body(String input) {
+    final cleaned = input.replaceAll(RegExp(r'\s'), '');
+    if (cleaned.length < 16 || cleaned.length % 4 != 0) return null;
+    if (!RegExp(r'^[A-Za-z0-9+/]+={0,2}$').hasMatch(cleaned)) return null;
+    try {
+      return utf8.decode(base64.decode(cleaned));
+    } catch (_) {
+      return null;
+    }
+  }
+
+  /// Профиль из outbound в sing-box / Xray JSON.
+  static PreviewEntry? _entryFromJsonOutbound(
+    Map<String, dynamic> item,
+    int index,
+  ) {
+    final protocolName = (item['protocol'] ?? item['type'])?.toString();
+    if (protocolName == null) return null;
+
+    final protocol = switch (protocolName.toLowerCase()) {
+      'vless' => Protocol.xrayVless,
+      'vmess' => Protocol.vmess,
+      'trojan' => Protocol.trojan,
+      'hysteria2' || 'hy2' => Protocol.hysteria2,
+      'shadowsocks' || 'ss' => Protocol.shadowsocks,
+      'wireguard' => Protocol.wireGuard,
+      _ => null,
+    };
+    if (protocol == null) return null;
+
+    // Адрес и порт лежат в разных местах в зависимости от формата.
+    final settings = (item['settings'] as Map?)?.cast<String, dynamic>();
+    final vnext = (settings?['vnext'] as List?)?.first;
+    final server = vnext is Map ? vnext : null;
+    final servers = (settings?['servers'] as List?)?.first;
+    final serverNode = servers is Map ? servers : null;
+
+    final address = ((item['address'] ?? server?['address'] ??
+            serverNode?['address']) as String?);
+    if (address == null || address.isEmpty) return null;
+
+    final rawPort = item['port'] ?? server?['port'] ?? serverNode?['port'];
+    final port = rawPort is int
+        ? rawPort
+        : int.tryParse('${rawPort ?? ''}') ?? _defaultPort(protocol);
+
+    final tag = (item['tag'] ?? item['remarks'] ?? '$address:$port').toString();
+
+    final users = (server?['users'] as List?) ?? const [];
+    final uuid = users.isNotEmpty && users.first is Map
+        ? (users.first as Map)['id']?.toString()
+        : item['uuid'] as String?;
+
+    return PreviewEntry(
+      id: 'sub-json-$index',
+      title: tag,
+      subtitle: '${protocol.displayName} · $address:$port',
+      protocol: protocol,
+      needsModule: _engineNotBundled(protocol),
+      config: ProtocolConfig(
+        address: address,
+        port: port,
+        uuid: uuid,
+        publicKey: serverNode?['password']?.toString(),
+        sni: (server?['tls'] as Map?)?['serverName']?.toString(),
+        flow: server?['flow']?.toString(),
+        auth: item['password']?.toString(),
+        raw: jsonEncode(item),
+      ),
     );
   }
 

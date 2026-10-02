@@ -113,9 +113,7 @@ class BlupAction extends StatelessWidget {
                   onTap();
                 }
               },
-              child: Center(
-                child: AnimatedSwitcher(
-                  duration: const Duration(milliseconds: 200),
+child: Center(
                   child: isRunning
                       ? SizedBox(
                           key: const ValueKey('spinner'),
@@ -123,8 +121,7 @@ class BlupAction extends StatelessWidget {
                           height: size * 0.34,
                           child: CircularProgressIndicator(
                             strokeWidth: 2,
-                            valueColor:
-                                AlwaysStoppedAnimation<Color>(ringColor),
+                            valueColor: AlwaysStoppedAnimation<Color>(ringColor),
                           ),
                         )
                       : VispIcon(
@@ -134,7 +131,6 @@ class BlupAction extends StatelessWidget {
                           color: ringColor,
                         ),
                 ),
-              ),
             ),
           ),
         ),

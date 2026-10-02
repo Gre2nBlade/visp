@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 
@@ -7,7 +7,6 @@ import '../../../core/icons/visp_icon.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_spacing.dart';
 import '../../../core/theme/app_text_styles.dart';
-import '../../../core/widgets/blup_action.dart';
 import '../../../core/widgets/blup_visp.dart';
 import '../../../core/widgets/visp_button.dart';
 import '../../../core/widgets/visp_chip.dart';
@@ -20,6 +19,7 @@ import '../../../l10n/strings.dart';
 import '../../../state/app_state.dart';
 import '../../servers/servers_content.dart';
 import '../models/connection_models.dart';
+import '../widgets/blup_layer.dart';
 import '../widgets/engine_state_chip.dart';
 import 'add_connection_screen.dart';
 import 'split_tunneling_screen.dart';
@@ -200,17 +200,9 @@ class _ConnectedHome extends StatelessWidget {
                       const SizedBox(height: AppSpacing.xl),
                       _StatusText(state: state, s: s),
                       const Spacer(),
-                      // Blup и кнопка в его центре — геометрический центр
-                      // доступной области экрана.
-                      Center(
-                        child: BlupVisp(
-                          status: state.status,
-                          size: 236,
-                          trafficPulse: state.trafficPulse,
-                          motionReduced: _motionReduced(context),
-                          action: _BlupCenterAction(state: state, s: s),
-                        ),
-                      ),
+                      // Фигура в потоке колонки, а не поверх неё: кнопка
+                      // в центре не перекрывается статусом и селектором.
+                      BlupLayer(state: state),
                       const Spacer(),
                       if (state.errorText != null)
                         Padding(
@@ -485,37 +477,6 @@ class _ProtocolSelector extends StatelessWidget {
 ///
 /// Логика та же, что была у отдельной кнопки подключения, но без текстовой
 /// подписи — состояние читается по иконке и подсказке.
-class _BlupCenterAction extends StatelessWidget {
-  const _BlupCenterAction({required this.state, required this.s});
-
-  final AppState state;
-  final S s;
-
-  @override
-  Widget build(BuildContext context) {
-    return BlupAction(
-      status: state.status,
-      onCancel: state.cancelConnect,
-      onTap: () async {
-        if (state.status == BlupStatus.connected) {
-          state.disconnect();
-          return;
-        }
-        if (state.selectedProfile == null) {
-          VispToast.showError(
-            context,
-            s.notChosen,
-            actionLabel: s.addConnection,
-            onAction: () => AddConnectionScreen.open(context),
-          );
-          return;
-        }
-        await state.connect();
-      },
-    );
-  }
-}
-
 class _DebugBlock extends StatelessWidget {
   const _DebugBlock({required this.state});
 

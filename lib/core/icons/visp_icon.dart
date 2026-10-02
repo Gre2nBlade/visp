@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 
 /// Семантический набор иконок Visp.
 ///
@@ -67,12 +67,27 @@ enum VispIcons {
 
 /// Кодировка глифов MynaUI Icons (MIT).
 ///
-/// FontPackage: mynaui · шестерёнчатый контур 1.5 · имена из packages/icons.
+/// FontPackage: mynaui · имена из packages/icons. Нумерация у начертаний
+/// outline и solid совпадает, поэтому один и тот же код даёт тонкий контур
+/// или заливку в зависимости от выбранного семейства.
 class MynaUi {
   MynaUi._();
 
-  /// Начертание иконок подключается в pubspec (`fonts:` → family: mynaui).
+  /// Тонкий контур: обычные элементы интерфейса.
   static const String fontFamily = 'mynaui';
+
+  /// Заливка: активные состояния, крупные акценты.
+  static const String solidFamily = 'mynaui_solid';
+
+
+  /// Заливка для произвольного глифа.
+///
+/// Используется только в инструментах и тестах. В release-сборке
+/// tree-shaking иконок отвергает неконстантные вызовы `IconData`, поэтому
+/// обычный интерфейс обязан брать иконку из [MynaUiSolid].
+@visibleForTesting
+static IconData solid(int codePoint) =>
+    IconData(codePoint, fontFamily: solidFamily);
 
   static const IconData home = IconData(0xec49, fontFamily: fontFamily);
   static const IconData server = IconData(0xee32, fontFamily: fontFamily);
@@ -259,6 +274,94 @@ extension VispIconsData on VispIcons {
 }
 
 
+/// Залитые иконки MynaUI.
+///
+/// Держатся отдельно от контурных и объявлены константами: так
+/// tree-shaking иконок в release-сборке видит статические ссылки на шрифт
+/// и не выбрасывает его целиком.
+class MynaUiSolid {
+  MynaUiSolid._();
+
+  static const IconData home = IconData(0xec49, fontFamily: MynaUi.solidFamily);
+  static const IconData server = IconData(0xee32, fontFamily: MynaUi.solidFamily);
+  static const IconData settings =
+      IconData(0xeb55, fontFamily: MynaUi.solidFamily);
+  static const IconData studio = IconData(0xec70, fontFamily: MynaUi.solidFamily);
+  static const IconData plugins =
+      IconData(0xedee, fontFamily: MynaUi.solidFamily);
+  static const IconData proxy = IconData(0xef17, fontFamily: MynaUi.solidFamily);
+  static const IconData plus = IconData(0xede8, fontFamily: MynaUi.solidFamily);
+  static const IconData shieldCheck =
+      IconData(0xee3c, fontFamily: MynaUi.solidFamily);
+  static const IconData shield = IconData(0xee44, fontFamily: MynaUi.solidFamily);
+  static const IconData checkCircle =
+      IconData(0xeae8, fontFamily: MynaUi.solidFamily);
+  static const IconData info = IconData(0xec5c, fontFamily: MynaUi.solidFamily);
+  static const IconData warning = IconData(0xeb7b, fontFamily: MynaUi.solidFamily);
+  static const IconData theme = IconData(0xee85, fontFamily: MynaUi.solidFamily);
+  static const IconData search = IconData(0xee2f, fontFamily: MynaUi.solidFamily);
+  static const IconData key = IconData(0xec67, fontFamily: MynaUi.solidFamily);
+  static const IconData lock = IconData(0xed50, fontFamily: MynaUi.solidFamily);
+  static const IconData signal = IconData(0xed82, fontFamily: MynaUi.solidFamily);
+  static const IconData device = IconData(0xed86, fontFamily: MynaUi.solidFamily);
+  static const IconData monitor = IconData(0xed87, fontFamily: MynaUi.solidFamily);
+}
+
+/// Залитая версия иконки.
+///
+/// Возвращает готовую константу, если она есть: вычисляемый `IconData`
+/// ломает tree-shaking иконок в release-сборке.
+IconData filledData(VispIcons icon) {
+  switch (icon) {
+    case VispIcons.home:
+      return MynaUiSolid.home;
+    case VispIcons.server:
+      return MynaUiSolid.server;
+    case VispIcons.settings:
+      return MynaUiSolid.settings;
+    case VispIcons.studio:
+      return MynaUiSolid.studio;
+    case VispIcons.plugins:
+      return MynaUiSolid.plugins;
+    case VispIcons.proxy:
+      return MynaUiSolid.proxy;
+    case VispIcons.plus:
+      return MynaUiSolid.plus;
+    case VispIcons.shieldCheck:
+    case VispIcons.dpi:
+      return MynaUiSolid.shieldCheck;
+    case VispIcons.shield:
+      return MynaUiSolid.shield;
+    case VispIcons.checkCircle:
+      return MynaUiSolid.checkCircle;
+    case VispIcons.info:
+      return MynaUiSolid.info;
+    case VispIcons.warning:
+    case VispIcons.alert:
+      return MynaUiSolid.warning;
+    case VispIcons.theme:
+      return MynaUiSolid.theme;
+    case VispIcons.search:
+      return MynaUiSolid.search;
+    case VispIcons.key:
+      return MynaUiSolid.key;
+    case VispIcons.lock:
+    case VispIcons.security:
+      return MynaUiSolid.lock;
+    case VispIcons.signal:
+      return MynaUiSolid.signal;
+    case VispIcons.device:
+      return MynaUiSolid.device;
+    case VispIcons.monitor:
+      return MynaUiSolid.monitor;
+    default:
+      // Контурная иконка используется как залитая: это честнее, чем
+      // конструировать IconData во время выполнения — tree-shaking иконок
+      // отвергает неконстантные вызовы.
+      return icon.data;
+  }
+}
+
 /// Виджет-адаптер для иконок Visp.
 ///
 /// Размеры по DESIGN.md: 20 px в строках, 24 px в крупных действиях,
@@ -270,23 +373,27 @@ class VispIcon extends StatelessWidget {
     this.size = 20,
     this.color,
     this.weight,
+    this.filled = false,
   });
 
   final VispIcons icon;
   final double size;
   final Color? color;
 
-  /// Толщина линии иконки (Material Symbols weight, 100–900).
+  /// Заливка вместо контура. Используется для активных состояний, чтобы
+  /// выделение читалось формой, а не только цветом.
+  final bool filled;
+
+  /// Толщина линии иконки. Сохраняется для совместимости вызовов.
   final double? weight;
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     return Icon(
-      icon.data,
+      filled ? filledData(icon) : icon.data,
       size: size,
       color: color ?? theme.iconTheme.color,
-      weight: weight,
       semanticLabel: icon.name,
     );
   }

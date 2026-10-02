@@ -33,7 +33,10 @@ class VispFloatingNav extends StatelessWidget {
   /// Режим стекла: без стекла, матовое или обычное (раздел 11.2).
   final GlassMode glassMode;
 
-  static const _barHeight = 60.0;
+  // Высота не фиксируется жёстко: «таблетка» с увеличенной иконкой
+  // должна помещаться на любом экране, поэтому бар растёт под содержимое.
+  static const _barHeight = 68.0;
+  static const _barPadding = 6.0;
 
   @override
   Widget build(BuildContext context) {
@@ -53,32 +56,28 @@ class VispFloatingNav extends StatelessWidget {
             Expanded(
               child: VispGlassCapsule(
                 enabled: glassMode != GlassMode.none,
-                matte: glassMode == GlassMode.matte,
                 radius: _barHeight / 2,
-                padding: const EdgeInsets.all(6),
+                padding: const EdgeInsets.all(_barPadding),
                 child: LayoutBuilder(
                   builder: (context, constraints) {
                     final tabWidth =
                         constraints.maxWidth / destinations.length;
-                    return SizedBox(
-                      height: _barHeight - 12,
-                      child: Stack(
-                        children: [
+                    return Stack(
+                      children: [
                           AnimatedPositioned(
                             duration: const Duration(milliseconds: 220),
                             curve: Curves.easeOutCubic,
                             left: currentIndex * tabWidth + 3,
                             top: 3,
+                            bottom: 3,
                             width: tabWidth - 6,
-                            height: _barHeight - 18,
                             child: DecoratedBox(
                               decoration: BoxDecoration(
                                 color: colors.primary.withValues(alpha: 0.16),
-                                borderRadius: BorderRadius.circular(
-                                  (_barHeight - 18) / 2,
-                                ),
+                                borderRadius: BorderRadius.circular(AppRadius.m),
                                 border: Border.all(
-                                  color: colors.primary.withValues(alpha: 0.35),
+                                  color:
+                                      colors.primary.withValues(alpha: 0.35),
                                 ),
                               ),
                             ),
@@ -101,7 +100,6 @@ class VispFloatingNav extends StatelessWidget {
                             }),
                           ),
                         ],
-                      ),
                     );
                   },
                 ),
@@ -140,10 +138,27 @@ class _NavTab extends StatelessWidget {
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              VispIcon(
-                destination.icon,
-                size: 22,
-                color: selected ? colors.primary : colors.textSecondary,
+              // Активная вкладка: иконка заливается и становится крупнее,
+              // поэтому выделение читается формой, а не только цветом.
+              AnimatedContainer(
+                duration: const Duration(milliseconds: 220),
+                curve: Curves.easeOutCubic,
+                padding: EdgeInsets.symmetric(
+                  horizontal: selected ? AppSpacing.m : AppSpacing.s,
+                  vertical: selected ? AppSpacing.xs : 2,
+                ),
+                decoration: BoxDecoration(
+                  color: selected
+                      ? colors.primary.withValues(alpha: 0.16)
+                      : Colors.transparent,
+                  borderRadius: BorderRadius.circular(AppRadius.m),
+                ),
+                child: VispIcon(
+                  destination.icon,
+                  size: selected ? 26 : 22,
+                  filled: selected,
+                  color: selected ? colors.primary : colors.textSecondary,
+                ),
               ),
               const SizedBox(height: 2),
               // Подпись не должна ни переноситься по букве, ни обрезаться:
@@ -188,7 +203,6 @@ class _AddButton extends StatelessWidget {
       // к навигационному слою, где стекло и живёт.
       child: VispGlass(
         enabled: glassMode != GlassMode.none,
-        matte: glassMode == GlassMode.matte,
         radius: _size / 2,
         distortion: 0.1,
         child: InkWell(

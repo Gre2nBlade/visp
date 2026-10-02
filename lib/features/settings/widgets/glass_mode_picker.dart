@@ -9,12 +9,12 @@ import '../../../core/widgets/visp_glass.dart';
 import '../../../state/app_state.dart';
 import '../../../state/preferences.dart';
 
-/// Выбор материала поверхностей: без стекла, матовое, обычное (11.2).
+/// Выбор материала поверхностей: обычный или стекло (раздел 11.2).
 ///
-/// Каждый вариант показывает живой образец того, как будет выглядеть
-/// навигационная капсула: выбор виден сразу, без перезапуска.
+/// Каждый вариант показывает живой образец навигационной капсулы: выбор
+/// виден сразу, без перезапуска приложения.
 class GlassModePicker extends StatelessWidget {
-  const GlassModePicker({required this.state});
+  const GlassModePicker({super.key, required this.state});
 
   final AppState state;
 
@@ -40,7 +40,6 @@ class GlassModePicker extends StatelessWidget {
         // Образец материала в текущем режиме.
         VispGlassCapsule(
           enabled: state.glassMode != GlassMode.none,
-          matte: state.glassMode == GlassMode.matte,
           radius: 22,
           padding: const EdgeInsets.symmetric(
             horizontal: AppSpacing.l,
@@ -52,11 +51,7 @@ class GlassModePicker extends StatelessWidget {
               VispIcon(VispIcons.shieldCheck, size: 16, color: colors.primary),
               const SizedBox(width: AppSpacing.s),
               Text(
-                state.glassMode == GlassMode.none
-                    ? 'Обычный материал'
-                    : state.glassMode == GlassMode.matte
-                        ? 'Матовое стекло'
-                        : 'Стекло',
+                state.glassMode == GlassMode.none ? 'Обычный материал' : 'Стекло',
                 style: AppTextStyles.small.copyWith(color: colors.textPrimary),
               ),
             ],
@@ -78,14 +73,14 @@ class _GlassModeTile extends StatelessWidget {
   final bool selected;
   final VoidCallback onTap;
 
+  static const Map<GlassMode, String> _descriptions = {
+    GlassMode.none: 'Без преломления и размытия. Экономнее по ресурсам.',
+    GlassMode.regular: 'Преломление фона с инерцией навигации и кнопки «+».',
+  };
+
   @override
   Widget build(BuildContext context) {
     final colors = SemanticColors.of(context);
-    final descriptions = {
-      GlassMode.none: 'Без преломления и размытия. Экономнее по ресурсам.',
-      GlassMode.matte: 'Иней и световой край без преломления фона.',
-      GlassMode.regular: 'Полное преломление с преломляющим шейдером.',
-    };
 
     return Semantics(
       selected: selected,
@@ -100,7 +95,7 @@ class _GlassModeTile extends StatelessWidget {
             vertical: AppSpacing.s,
           ),
           decoration: BoxDecoration(
-            // Отметка выбранного: цвет плюс иконка, а не только цвет рамки.
+            // Отметка выбранного: цвет и иконка, а не только цвет рамки.
             color: selected
                 ? colors.primary.withValues(alpha: 0.12)
                 : Colors.transparent,
@@ -114,6 +109,7 @@ class _GlassModeTile extends StatelessWidget {
               VispIcon(
                 selected ? VispIcons.checkCircle : VispIcons.info,
                 size: 18,
+                filled: selected,
                 color: selected ? colors.primary : colors.textSecondary,
               ),
               const SizedBox(width: AppSpacing.m),
@@ -130,7 +126,7 @@ class _GlassModeTile extends StatelessWidget {
                       ),
                     ),
                     Text(
-                      descriptions[mode]!,
+                      _descriptions[mode] ?? '',
                       style: AppTextStyles.small.copyWith(
                         color: colors.textSecondary,
                       ),
