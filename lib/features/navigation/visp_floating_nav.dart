@@ -61,7 +61,7 @@ class VispFloatingNav extends StatelessWidget {
               Expanded(
                 child: VispGlassCapsule(
                   enabled: glassMode != GlassMode.none,
-                  radius: _barHeight / 2,
+                  radius: AppRadius.s,
                   padding: const EdgeInsets.all(_barPadding),
                   child: LayoutBuilder(
                     builder: (context, constraints) {
@@ -148,26 +148,29 @@ class _NavTab extends StatelessWidget {
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              // Активная вкладка: иконка заливается и становится крупнее,
-              // поэтому выделение читается формой, а не только цветом.
+              // Активная вкладка: иконка заливается янтарным. Выделение держит
+              // форма (заливка и рамка) и текст, а не только цвет.
               AnimatedContainer(
-                duration: const Duration(milliseconds: 220),
-                curve: Curves.easeOutCubic,
+                duration: const Duration(milliseconds: 200),
+                curve: Curves.easeOut,
                 padding: EdgeInsets.symmetric(
                   horizontal: selected ? AppSpacing.m : AppSpacing.s,
                   vertical: selected ? AppSpacing.xs : 2,
                 ),
                 decoration: BoxDecoration(
-                  color: selected
-                      ? colors.primary.withValues(alpha: 0.16)
-                      : Colors.transparent,
-                  borderRadius: BorderRadius.circular(AppRadius.m),
+                  color: selected ? colors.muted : Colors.transparent,
+                  borderRadius: BorderRadius.circular(AppRadius.sm),
+                  border: selected
+                      ? Border.all(
+                          color: colors.primary.withValues(alpha: 0.4),
+                        )
+                      : null,
                 ),
                 child: VispIcon(
                   destination.icon,
-                  size: selected ? 26 : 22,
+                  size: 22,
                   filled: selected,
-                  color: selected ? colors.primary : colors.textSecondary,
+                  color: selected ? colors.primary : colors.mutedForeground,
                 ),
               ),
               const SizedBox(height: 2),
@@ -179,11 +182,12 @@ class _NavTab extends StatelessWidget {
                   destination.label,
                   maxLines: 1,
                   softWrap: false,
-                  style: AppTextStyles.small.copyWith(
-                    fontSize: 10,
-                    height: 1.0,
-                    color: selected ? colors.primary : colors.textSecondary,
-                    fontWeight: selected ? FontWeight.w600 : FontWeight.w500,
+                  style: AppTextStyles.badge.copyWith(
+                    fontSize: 11,
+                    height: 1.1,
+                    color: selected ? colors.primary : colors.mutedForeground,
+                    fontWeight:
+                        selected ? FontWeight.w600 : FontWeight.w400,
                   ),
                 ),
               ),

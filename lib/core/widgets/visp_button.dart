@@ -8,79 +8,82 @@ import '../theme/app_text_styles.dart';
 import 'visp_focus_ring.dart';
 
 enum VispButtonStyle {
-  /// Основная заполненная шалфейная кнопка.
+  /// Главное действие: заливка акцентом.
   primary,
 
-  /// Вторичная с рамкой.
+  /// Второстепенное: прозрачный фон, волосяная рамка.
   secondary,
 
-  /// Третичная текстовая.
+  /// Текстовое действие без рамки.
   tertiary,
 
-  /// Деструктивная.
+  /// Разрушающее действие.
   danger,
 }
 
 enum VispButtonSize { compact, regular, prominent }
 
-/// Кнопка Visp.
+/// Кнопка Visp в духе Amnezia Client.
 ///
-/// Стили по DESIGN.md: primary — заполненная акцентом, secondary — с рамкой,
-/// tertiary — текстовая. Деструктивное действие требует подтверждения
-/// диалогом — для него есть [VispButton.destructive].
+/// Плоская: без теней, глубину создаёт волосяная рамка в 1 px. Базовый
+/// радиус 16. Нажатие даёт и смену цвета, и лёгкое сжатие до 0.96 —
+/// отклик виден и пальцем, и глазом.
 class VispButton extends StatefulWidget {
   const VispButton({
     super.key,
     required this.label,
-    this.onPressed,
     this.style = VispButtonStyle.primary,
     this.size = VispButtonSize.regular,
     this.icon,
-    this.expanded = false,
-    this.loading = false,
+    this.onPressed,
+    this.onConfirmed,
     this.confirmTitle,
     this.confirmMessage,
-    this.onConfirmed,
+    this.expanded = false,
+    this.loading = false,
   });
 
+  /// Компактная кнопка для вспомогательных действий.
   const VispButton.compact({
     super.key,
     required this.label,
-    this.onPressed,
-    this.style = VispButtonStyle.primary,
+    this.style = VispButtonStyle.secondary,
     this.icon,
-    this.loading = false,
+    this.onPressed,
+    this.onConfirmed,
     this.confirmTitle,
     this.confirmMessage,
-    this.onConfirmed,
     this.expanded = false,
-  })  : size = VispButtonSize.compact;
+    this.loading = false,
+  }) : size = VispButtonSize.compact;
 
-  /// Деструктивная кнопка: показывает подтверждение перед действием.
+  /// Разрушающее действие с подтверждением.
   const VispButton.destructive({
     super.key,
     required this.label,
-    required this.confirmTitle,
-    required this.confirmMessage,
-    required this.onConfirmed,
-    this.size = VispButtonSize.regular,
+    this.icon,
+    this.onPressed,
+    this.onConfirmed,
+    this.confirmTitle,
+    this.confirmMessage,
     this.expanded = false,
+    this.loading = false,
   })  : style = VispButtonStyle.danger,
-        icon = null,
-        loading = false,
-        onPressed = null;
+        size = VispButtonSize.regular;
 
   final String label;
-  final VoidCallback? onPressed;
   final VispButtonStyle style;
   final VispButtonSize size;
   final VispIcons? icon;
-  final bool expanded;
-  final bool loading;
+  final VoidCallback? onPressed;
 
+  /// Если задано, нажатие сначала спрашивает подтверждение.
+  final VoidCallback? onConfirmed;
   final String? confirmTitle;
   final String? confirmMessage;
-  final VoidCallback? onConfirmed;
+
+  final bool expanded;
+  final bool loading;
 
   double get _height {
     switch (size) {
@@ -98,170 +101,193 @@ class VispButton extends StatefulWidget {
 }
 
 class _VispButtonState extends State<VispButton> {
-  bool _confirming = false;
+  bool _pressed = false;
 
-  void _handle() async {
-    if (widget.onConfirmed != null) {
-      Haptics.medium(context);
-      final confirmed = await _confirm();
-      if (confirmed && mounted) {
-        widget.onConfirmed!();
-      }
-      return;
-    }
-    widget.onPressed?.call();
-  }
+  /// Защита от повторного нажатия, пока открыт диалог подтверждения.
+  bool _handling = false;
 
-  Future<bool> _confirm() async {
-    setState(() => _confirming = true);
+  bool get _isDisabled =>
+      widget.onPressed == null && widget.onConfirmed == null || widget.loading;
+
+  Future<void> _handle() async {
+    if (widget.onPressed == null && widget.onConfirmed == null) return;
+    if (_handling) return;
+    _handling = true;
+    Haptics.light(context);
+
     try {
-      final result = await showDialog<bool>(
+      if (widget.onConfirmed == null) {
+        widget.onPressed?.call();
+        return;
+      }
+
+      final confirmed = await showDialog<bool>(
         context: context,
-        barrierDismissible: true,
-        builder: (context) => _DestructiveDialog(
-          title: widget.confirmTitle!,
-          message: widget.confirmMessage ?? '',
-          confirmLabel: widget.label,
+        builder: (dialogContext) => AlertDialog(
+          backgroundColor: SemanticColors.of(dialogContext).popover,
+          surfaceTintColor: Colors.transparent,
+          shape: const RoundedRectangleBorder(
+            borderRadius: AppRadius.sAll,
+          ),
+          title: widget.confirmTitle == null
+              ? null
+              : Text(
+                  widget.confirmTitle!,
+                  style: AppTextStyles.h2Strong.copyWith(
+                    color: SemanticColors.of(dialogContext).foreground,
+                  ),
+                ),
+          content: widget.confirmMessage == null
+              ? null
+              : Text(
+                  widget.confirmMessage!,
+                  style: AppTextStyles.label.copyWith(
+                    color: SemanticColors.of(dialogContext).mutedForeground,
+                  ),
+                ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(dialogContext).pop(false),
+              style: TextButton.styleFrom(
+                foregroundColor:
+                    SemanticColors.of(dialogContext).mutedForeground,
+              ),
+              child: const Text('Отмена'),
+            ),
+            TextButton(
+              onPressed: () => Navigator.of(dialogContext).pop(true),
+              style: TextButton.styleFrom(
+                foregroundColor:
+                    SemanticColors.of(dialogContext).destructive,
+              ),
+              child: const Text('Продолжить'),
+            ),
+          ],
         ),
       );
-      return result ?? false;
+
+      if (confirmed == true) widget.onConfirmed?.call();
     } finally {
-      if (mounted) setState(() => _confirming = false);
+      _handling = false;
     }
   }
 
   @override
   Widget build(BuildContext context) {
     final colors = SemanticColors.of(context);
-    final isDisabled = widget.onPressed == null &&
-        widget.onConfirmed == null &&
-        !widget.loading;
+    final disabled = _isDisabled;
 
-    Color? fg;
-    Color? bg;
+    // Акцент в Amnezia — янтарный; нажатое состояние уходит в burntOrange,
+    // отключённое — в приглушённый тон, а не просто в прозрачность.
+    Color fg;
+    Color bg;
     Color? borderColor;
     switch (widget.style) {
       case VispButtonStyle.primary:
-        fg = colors.background;
-        bg = colors.primary;
+        fg = colors.primaryForeground;
+        bg = _pressed ? colors.primaryPressed : colors.primary;
         break;
       case VispButtonStyle.secondary:
-        fg = colors.textPrimary;
-        bg = Colors.transparent;
-        borderColor = colors.border;
+        fg = disabled ? colors.mutedForeground : colors.foreground;
+        bg = _pressed ? colors.accent : Colors.transparent;
+        borderColor = disabled ? colors.border : colors.borderStrong;
         break;
       case VispButtonStyle.tertiary:
-        fg = colors.primary;
-        bg = Colors.transparent;
+        fg = disabled ? colors.mutedForeground : colors.primary;
+        bg = _pressed ? colors.accent : Colors.transparent;
         break;
       case VispButtonStyle.danger:
-        fg = colors.danger;
-        bg = Colors.transparent;
-        borderColor = colors.danger.withValues(alpha: 0.4);
+        fg = disabled ? colors.mutedForeground : colors.destructive;
+        bg = _pressed ? colors.destructive.withValues(alpha: 0.12)
+            : Colors.transparent;
+        borderColor = colors.destructive.withValues(alpha: 0.5);
         break;
     }
 
-    final button = SizedBox(
-      height: widget._height,
-      child: Material(
-        color: bg,
-        borderRadius: AppRadius.mAll,
-        child: InkWell(
-          onTap: isDisabled || widget.loading || _confirming ? null : _handle,
-          borderRadius: AppRadius.mAll,
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: AppSpacing.m),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                if (widget.loading)
-                  SizedBox(
-                    width: 16,
-                    height: 16,
-                    child: CircularProgressIndicator(
-                      strokeWidth: 2,
-                      color: fg,
-                    ),
-                  )
-                else if (widget.icon != null)
-                  Padding(
-                    padding: const EdgeInsets.only(right: AppSpacing.xs + 2),
-                    child: VispIcon(widget.icon!, size: 18, color: fg),
+    if (disabled && widget.style == VispButtonStyle.primary) {
+      bg = colors.muted;
+      fg = colors.mutedForeground;
+    }
+
+    final radius = BorderRadius.circular(AppRadius.s);
+
+    Widget content = Material(
+      color: bg,
+      borderRadius: radius,
+      child: InkWell(
+        onTap: disabled || _handling ? null : _handle,
+        borderRadius: radius,
+        onHighlightChanged: (v) => setState(() => _pressed = v),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: AppSpacing.l),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              if (widget.loading)
+                SizedBox(
+                  width: 16,
+                  height: 16,
+                  child: CircularProgressIndicator(
+                    strokeWidth: 2,
+                    color: fg,
                   ),
-                Flexible(
-                  child: Text(
-                    widget.label,
-                    style: AppTextStyles.button.copyWith(color: fg),
-                    textAlign: TextAlign.center,
-                    overflow: TextOverflow.ellipsis,
+                )
+              else if (widget.icon != null)
+                Padding(
+                  padding: const EdgeInsets.only(right: AppSpacing.s),
+                  child: VispIcon(
+                    widget.icon!,
+                    size: 20,
+                    color: fg,
+                    filled: widget.style == VispButtonStyle.primary,
                   ),
                 ),
-              ],
-            ),
+              Flexible(
+                child: Text(
+                  widget.label,
+                  style: AppTextStyles.button.copyWith(color: fg),
+                  textAlign: TextAlign.center,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
+            ],
           ),
         ),
       ),
     );
 
-    final withBorder = borderColor != null
-        ? DecoratedBox(
-            decoration: BoxDecoration(
-              borderRadius: AppRadius.mAll,
-              border: Border.all(color: borderColor),
-            ),
-            child: button,
-          )
-        : button;
+    // Плоская кнопка: рамка вместо тени. Она же работает как фокус-кольцо.
+    if (borderColor != null) {
+      content = DecoratedBox(
+        decoration: BoxDecoration(
+          borderRadius: radius,
+          border: Border.all(color: borderColor),
+        ),
+        child: content,
+      );
+    }
 
-    final focusable = VispFocusRing(
-      radius: AppRadius.mAll,
-      child: withBorder,
-    );
+    if (!disabled) {
+      content = VispFocusRing(
+        borderRadius: radius,
+        child: content,
+      );
+    }
 
-    return widget.expanded
-        ? Row(children: [Expanded(child: focusable)])
-        : focusable;
-  }
-}
-
-class _DestructiveDialog extends StatelessWidget {
-  const _DestructiveDialog({
-    required this.title,
-    required this.message,
-    required this.confirmLabel,
-  });
-
-  final String title;
-  final String message;
-  final String confirmLabel;
-
-  @override
-  Widget build(BuildContext context) {
-    final colors = SemanticColors.of(context);
-    return AlertDialog(
-      backgroundColor: colors.surface2,
-      shape: RoundedRectangleBorder(
-        borderRadius: AppRadius.lAll,
-        side: BorderSide(color: colors.border),
+    // Лёгкое сжатие при нажатии: 0.96 — заметно, но не преувеличено.
+    return Semantics(
+      button: true,
+      enabled: !disabled,
+      child: AnimatedScale(
+        scale: _pressed && !disabled ? 0.96 : 1.0,
+        duration: const Duration(milliseconds: 100),
+        curve: Curves.easeOut,
+        child: widget.expanded
+            ? SizedBox(width: double.infinity, height: widget._height, child: content)
+            : SizedBox(height: widget._height, child: content),
       ),
-      title: Text(title, style: AppTextStyles.h1),
-      content: Text(message, style: AppTextStyles.body),
-      actions: [
-        TextButton(
-          onPressed: () => Navigator.of(context).pop(false),
-          child: Text(
-            MaterialLocalizations.of(context).cancelButtonLabel,
-          ),
-        ),
-        TextButton(
-          onPressed: () => Navigator.of(context).pop(true),
-          child: Text(
-            confirmLabel,
-            style: AppTextStyles.button.copyWith(color: colors.danger),
-          ),
-        ),
-      ],
     );
   }
 }

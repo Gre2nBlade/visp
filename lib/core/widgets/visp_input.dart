@@ -69,7 +69,7 @@ class VispInput extends StatelessWidget {
           ),
         ),
         VispFocusRing(
-          radius: AppRadius.mAll,
+          borderRadius: AppRadius.sAll,
           child: Material(
             color: hasError
                 ? colors.danger.withValues(alpha: 0.08)

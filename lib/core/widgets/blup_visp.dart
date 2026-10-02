@@ -179,6 +179,7 @@ class _BlupVispState extends State<BlupVisp>
                   trafficPulse: widget.trafficPulse,
                   seed: _seed,
                   brightness: Theme.of(context).brightness,
+                  motionReduced: widget.motionReduced,
                 ),
               ),
             ),
@@ -199,6 +200,7 @@ class _BlupPainter extends CustomPainter {
     required this.trafficPulse,
     required this.seed,
     required this.brightness,
+    this.motionReduced = false,
   });
 
   final double progress;
@@ -207,6 +209,11 @@ class _BlupPainter extends CustomPainter {
   final bool trafficPulse;
   final List<double> seed;
   final Brightness brightness;
+
+  /// При включённом «уменьшить движение» дуга прогресса не рисуется:
+  /// неподвижная дуга неотличима от зависшего подключения, а статус
+  /// всё равно читается текстом рядом с фигурой.
+  final bool motionReduced;
 
   static const _pointCount = 14;
 
@@ -313,8 +320,30 @@ class _BlupPainter extends CustomPainter {
         ..strokeJoin = StrokeJoin.round,
     );
 
+    // Дуга прогресса по кольцу фигуры — как в ConnectButton Amnezia:
+    // при установке она вращается, при подключении исчезает.
+    if (!motionReduced &&
+        (status == BlupStatus.preparing ||
+            status == BlupStatus.checking ||
+            status == BlupStatus.connecting ||
+            status == BlupStatus.reconnecting)) {
+      final ringRadius = baseRadius * 1.16;
+      canvas.drawArc(
+        Rect.fromCircle(center: Offset(cx, cy), radius: ringRadius),
+        -math.pi / 2 + (progress * 2 * math.pi),
+        math.pi * 0.42,
+        false,
+        Paint()
+          ..style = PaintingStyle.stroke
+          ..strokeWidth = compact ? 1.6 : 2.6
+          ..strokeCap = StrokeCap.round
+          ..color = colors.primary.withValues(alpha: 0.85),
+      );
+    }
+
     // Одна направленная волна по контуру во время подключения.
-    if ((status == BlupStatus.connecting ||
+    if (!motionReduced &&
+        (status == BlupStatus.connecting ||
             status == BlupStatus.checking ||
             status == BlupStatus.preparing ||
             status == BlupStatus.reconnecting) &&

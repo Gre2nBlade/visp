@@ -6,18 +6,29 @@ import '../theme/app_spacing.dart';
 import '../theme/app_text_styles.dart';
 
 enum ChipTone {
+  /// Нейтральная подпись: приглушённая заливка и вторичный текст.
   neutral,
+
+  /// Акцентное состояние: янтарный, как выбранный элемент в Amnezia.
   accent,
+
+  /// Предупреждение: жёлтый.
   warning,
+
+  /// Ошибка: красный.
   danger,
+
+  /// Информация: вторичный тон, без кричащего цвета.
   info,
+
+  /// Beta-канал.
   beta,
 }
 
-/// Чип статуса/протокола/канала/разрешения.
+/// Чип статуса, протокола или канала в стиле Amnezia.
 ///
-/// Чипы никогда не заменяют поясняющий текст: статус передаётся
-/// иконкой, цветом и текстом одновременно.
+/// Тонкие, радиус 8, текст 11 px. Чип никогда не заменяет поясняющий
+/// текст: состояние передаётся иконкой, цветом и подписью одновременно.
 class VispChip extends StatelessWidget {
   const VispChip({
     super.key,
@@ -41,58 +52,53 @@ class VispChip extends StatelessWidget {
     VispIcons? leading = icon;
     switch (tone) {
       case ChipTone.neutral:
-        fg = colors.textSecondary;
-        bg = colors.surface2;
+        fg = colors.mutedForeground;
+        bg = colors.muted;
       case ChipTone.accent:
         fg = colors.primary;
         bg = colors.primary.withValues(alpha: 0.12);
         leading = leading ?? VispIcons.checkCircle;
       case ChipTone.warning:
         fg = colors.warning;
-        bg = colors.warning.withValues(alpha: 0.14);
+        bg = colors.warning.withValues(alpha: 0.12);
         leading = leading ?? VispIcons.warning;
       case ChipTone.danger:
-        fg = colors.danger;
-        bg = colors.danger.withValues(alpha: 0.14);
+        fg = colors.destructive;
+        bg = colors.destructive.withValues(alpha: 0.12);
         leading = leading ?? VispIcons.alert;
       case ChipTone.info:
-        fg = colors.info;
-        bg = colors.info.withValues(alpha: 0.14);
+        fg = colors.mutedForeground;
+        bg = colors.muted;
         leading = leading ?? VispIcons.info;
       case ChipTone.beta:
-        fg = colors.info;
-        bg = colors.info.withValues(alpha: 0.14);
+        fg = colors.primary;
+        bg = colors.muted;
         leading = leading ?? VispIcons.flask;
     }
 
-    return DecoratedBox(
+    return Container(
       decoration: BoxDecoration(
         color: bg,
-        borderRadius: BorderRadius.circular(AppRadius.s + 2),
-        border: selected ? Border.all(color: fg, width: 1.2) : null,
+        borderRadius: BorderRadius.circular(AppRadius.sm),
+        border: selected ? Border.all(color: fg, width: 1) : null,
       ),
-      child: Padding(
-        padding: const EdgeInsets.symmetric(
-          horizontal: AppSpacing.s + 2,
-          vertical: AppSpacing.xs + 1,
-        ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            if (leading != null)
-              Padding(
-                padding: const EdgeInsets.only(right: AppSpacing.xs + 1),
-                child: VispIcon(leading, size: 13, color: fg),
-              ),
-            Text(
-              label,
-              style: AppTextStyles.small.copyWith(
-                color: fg,
-                fontWeight: FontWeight.w500,
-              ),
+      padding: const EdgeInsets.symmetric(
+        horizontal: AppSpacing.s,
+        vertical: AppSpacing.xs + 1,
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          if (leading != null)
+            Padding(
+              padding: const EdgeInsets.only(right: AppSpacing.xs),
+              child: VispIcon(leading, size: 13, color: fg),
             ),
-          ],
-        ),
+          Text(
+            label,
+            style: AppTextStyles.badge.copyWith(color: fg),
+          ),
+        ],
       ),
     );
   }

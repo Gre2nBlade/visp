@@ -114,15 +114,14 @@ class BlupAction extends StatelessWidget {
                 }
               },
 child: Center(
+                  // Во время установки прогресс показывает дуга по кольцу
+                  // фигуры, поэтому здесь остаётся только иконка: два
+                  // индикатора прогресса рядом выглядели бы дублем.
                   child: isRunning
                       ? SizedBox(
-                          key: const ValueKey('spinner'),
-                          width: size * 0.34,
-                          height: size * 0.34,
-                          child: CircularProgressIndicator(
-                            strokeWidth: 2,
-                            valueColor: AlwaysStoppedAnimation<Color>(ringColor),
-                          ),
+                          key: const ValueKey('busy'),
+                          width: size * 0.30,
+                          height: size * 0.30,
                         )
                       : VispIcon(
                           _icon,

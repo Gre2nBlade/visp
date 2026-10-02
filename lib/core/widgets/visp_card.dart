@@ -3,8 +3,12 @@ import 'package:flutter/material.dart';
 import '../theme/app_colors.dart';
 import '../theme/app_spacing.dart';
 
-/// Карточка Visp: одна поверхность для одного решения, без карточек в карточках.
-/// Вторичные строки отделяются разделителем.
+/// Карточка Visp в духе Amnezia Client.
+///
+/// Плоская поверхность без тени: глубину создаёт волосяная рамка в 1 px,
+/// а базовый радиус 16. Карточка не вкладывается в карточку — для вложенных
+/// элементов радиус считается через [AppNestedRadius], иначе вложенные
+/// углы выглядят зажатыми.
 class VispCard extends StatelessWidget {
   const VispCard({
     super.key,
@@ -13,6 +17,7 @@ class VispCard extends StatelessWidget {
     this.margin,
     this.onTap,
     this.radius,
+    this.selected = false,
   });
 
   final Widget child;
@@ -21,10 +26,13 @@ class VispCard extends StatelessWidget {
   final VoidCallback? onTap;
   final BorderRadius? radius;
 
+  /// Выбранное состояние: рамка переходит в акцентную.
+  final bool selected;
+
   @override
   Widget build(BuildContext context) {
     final colors = SemanticColors.of(context);
-    final br = radius ?? AppRadius.lAll;
+    final br = radius ?? AppRadius.sAll;
 
     final content = Padding(
       padding: padding ??
@@ -37,9 +45,11 @@ class VispCard extends StatelessWidget {
 
     final surface = DecoratedBox(
       decoration: BoxDecoration(
-        color: colors.surface1,
+        color: colors.card,
         borderRadius: br,
-        border: Border.all(color: colors.border),
+        border: Border.all(
+          color: selected ? colors.primary : colors.border,
+        ),
       ),
       child: onTap == null
           ? content
@@ -48,11 +58,14 @@ class VispCard extends StatelessWidget {
               child: InkWell(
                 onTap: onTap,
                 borderRadius: br,
+                hoverColor: colors.surfaceHover,
+                splashColor: colors.accent,
                 child: content,
               ),
             ),
     );
 
-    return margin != null ? Padding(padding: margin!, child: surface) : surface;
+    if (margin != null) return Padding(padding: margin!, child: surface);
+    return surface;
   }
 }

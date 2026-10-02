@@ -1,175 +1,224 @@
 import 'package:flutter/material.dart';
 
-/// Семантические цвета Visp в ролях shadcn/ui (DESIGN.md «Tokens»).
+/// Палитра Visp в духе Amnezia Client.
 ///
-/// Каждый токен имеет тёмное и светлое значение; компоненты читают роли, а не
-/// сырые цвета. Тёмная ветка — shadcn slate, роль primary — брендовый зелёный
-/// («подключено»). Цвет никогда не бывает единственным носителем состояния.
+/// Значения взяты из исходников Amnezia Client (client/ui/qml/Modules/
+/// Style/AmneziaStyle.qml) — это не подбор на глаз:
+///
+/// ```text
+/// midnightBlack  #0E0E11  фон приложения
+/// onyxBlack      #1C1D21  карточки, панель вкладок, шторки
+/// slateGray      #2C2D30  разделители и рамки 1 px
+/// charcoalGray   #494B50  отключённые состояния
+/// mutedGray      #878B91  вторичный текст
+/// paleGray       #D7D8DB  основной текст, состояние «выключено»
+/// goldenApricot  #FBB26A  акцент: подключено, выбрано, фокус, CTA
+/// burntOrange     #A85809  нажатое и отключённое состояние акцента
+/// vibrantGreen    #3FBF6B  успех
+/// vibrantRed      #EB5757  ошибка
+/// ```
+///
+/// Ключевое отличие от прежней темы: акцент — янтарный, а не зелёный.
+/// Зелёный остался только для успеха. Интерфейс плоский: вместо теней
+/// используются волосяные рамки в 1 px, поэтому роль `border` здесь
+/// заметна, а `shadow` не применяется.
 class SemanticColors {
-  // --- shadcn semantic roles ---------------------------------------------
+  // --- Поверхности ---------------------------------------------------------
 
-  /// Фон приложения (canvas).
+  /// Фон приложения.
   final Color background;
 
-  /// Основной текст на фоне.
-  final Color foreground;
-
-  /// Поверхность карточек и групп списка.
+  /// Карточки, панель вкладок, шторки.
   final Color card;
 
-  /// Текст на карточке.
+  /// Поверхность под наведением и нажатием.
+  final Color surfaceHover;
+
   final Color cardForeground;
 
-  /// Поверхность меню/шторок.
+  /// Всплывающие поверхности: шторки, меню.
   final Color popover;
 
-  /// Текст на popover.
   final Color popoverForeground;
 
-  /// Главный CTA и выбранный элемент (брендовый зелёный).
-  final Color primary;
-
-  /// Текст/иконки на primary.
-  final Color primaryForeground;
-
-  /// Более светлый оттенок primary для свечения и градиентов.
-  final Color primaryBright;
-
-  /// Вторичные кнопки и приглушённые блоки.
-  final Color secondary;
-
-  /// Текст на secondary.
-  final Color secondaryForeground;
-
-  /// Неактивные элементы, отключённые заливки.
+  /// Приглушённый блок: чипы, отключённые элементы.
   final Color muted;
+
+  // --- Текст ---------------------------------------------------------------
+
+  /// Основной текст.
+  final Color foreground;
 
   /// Вторичный текст и подписи.
   final Color mutedForeground;
 
-  /// Заливка hover/press.
+  // --- Акцент --------------------------------------------------------------
+
+  /// Янтарный акцент: подключено, выбранный элемент, фокус, главный CTA.
+  final Color primary;
+
+  /// Текст на акценте.
+  final Color primaryForeground;
+
+  /// Светлый оттенок акцента для свечения и градиентов.
+  final Color primaryBright;
+
+  /// Нажатое и отключённое состояние акцента.
+  final Color primaryPressed;
+
+  final Color secondary;
+  final Color secondaryForeground;
+
+  /// Заливка наведения и нажатия (отдельная от акцента).
   final Color accent;
 
-  /// Текст на accent.
   final Color accentForeground;
 
-  /// Деструктивные поверхности.
-  final Color destructive;
+  // --- Границы -------------------------------------------------------------
 
-  /// Текст на destructive.
-  final Color destructiveForeground;
-
-  /// Все рамки и разделители (1 px).
+  /// Разделители и рамки, 1 px.
   final Color border;
+
+  /// Усиленная рамка: выбранное состояние, фокус поля.
+  final Color borderStrong;
 
   /// Рамки полей ввода.
   final Color input;
 
-  /// Кольцо фокуса (2 px).
+  /// Кольцо фокуса.
   final Color ring;
 
-  /// Предупреждения и beta-канал.
-  final Color warning;
+  // --- Состояния -----------------------------------------------------------
 
-  /// Информационные чипы.
+  final Color destructive;
+  final Color destructiveForeground;
+
+  final Color warning;
   final Color info;
 
-  // --- спецификация Visp ---------------------------------------------------
+  /// Успех. В отличие от прежней темы, зелёный больше не акцент:
+  /// он означает именно успех.
+  final Color success;
 
-  /// Спокойный шалфейный цвет подключённого Blup Visp (#6FBF93, раздел 4.1.3).
+  // --- Blup Visp ------------------------------------------------------------
+
+  /// Фигура в состоянии «подключено» повторяет акцент.
   final Color blupConnected;
 
-  /// Терракотовый акцент ошибки (#E57B6E, раздел 4.1.5).
+  /// Фигура в состоянии ошибки.
   final Color blupError;
 
-  /// Приглушённый зелёно-графитовый цвет выключенного Blup Visp.
+  /// Фигура в покое.
   final Color blupIdle;
+
+  /// Фигура при установке: тёмная дуга на акцентном кольце.
+  final Color blupConnecting;
 
   const SemanticColors._({
     required this.background,
-    required this.foreground,
     required this.card,
+    required this.surfaceHover,
     required this.cardForeground,
     required this.popover,
     required this.popoverForeground,
+    required this.muted,
+    required this.foreground,
+    required this.mutedForeground,
     required this.primary,
     required this.primaryForeground,
     required this.primaryBright,
+    required this.primaryPressed,
     required this.secondary,
     required this.secondaryForeground,
-    required this.muted,
-    required this.mutedForeground,
     required this.accent,
     required this.accentForeground,
-    required this.destructive,
-    required this.destructiveForeground,
     required this.border,
+    required this.borderStrong,
     required this.input,
     required this.ring,
+    required this.destructive,
+    required this.destructiveForeground,
     required this.warning,
     required this.info,
+    required this.success,
     required this.blupConnected,
     required this.blupError,
     required this.blupIdle,
+    required this.blupConnecting,
   });
 
-  /// shadcn slate dark + брендовый зелёный primary.
+  /// Основная тёмная тема — как в Amnezia Client.
   static const dark = SemanticColors._(
-    background: Color(0xFF020617),
-    foreground: Color(0xFFF8FAFC),
-    card: Color(0xFF111827),
-    cardForeground: Color(0xFFF8FAFC),
-    popover: Color(0xFF111827),
-    popoverForeground: Color(0xFFF8FAFC),
-    primary: Color(0xFF22C55E),
-    primaryForeground: Color(0xFF052E16),
-    primaryBright: Color(0xFF4ADE80),
-    secondary: Color(0xFF1E293B),
-    secondaryForeground: Color(0xFFF8FAFC),
-    muted: Color(0xFF1E293B),
-    mutedForeground: Color(0xFF94A3B8),
-    accent: Color(0xFF1E293B),
-    accentForeground: Color(0xFFF8FAFC),
-    destructive: Color(0xFF7F1D1D),
-    destructiveForeground: Color(0xFFFCA5A5),
-    border: Color(0xFF1E293B),
-    input: Color(0xFF334155),
-    ring: Color(0xFF22C55E),
-    warning: Color(0xFFE7C46A),
-    info: Color(0xFF82B8E8),
-    blupConnected: Color(0xFF6FBF93),
-    blupError: Color(0xFFE57B6E),
-    blupIdle: Color(0xFF4A5A4F),
+    background: Color(0xFF0E0E11),
+    card: Color(0xFF1C1D21),
+    surfaceHover: Color(0xFF232327),
+    cardForeground: Color(0xFFD7D8DB),
+    popover: Color(0xFF1C1D21),
+    popoverForeground: Color(0xFFD7D8DB),
+    muted: Color(0xFF2C2D30),
+    foreground: Color(0xFFD7D8DB),
+    mutedForeground: Color(0xFF878B91),
+    primary: Color(0xFFFBB26A),
+    primaryForeground: Color(0xFF0E0E11),
+    primaryBright: Color(0xFFFCCC9C),
+    primaryPressed: Color(0xFFA85809),
+    secondary: Color(0xFF2C2D30),
+    secondaryForeground: Color(0xFFD7D8DB),
+    accent: Color(0xFF2C2D30),
+    accentForeground: Color(0xFFD7D8DB),
+    border: Color(0xFF2C2D30),
+    borderStrong: Color(0xFF494B50),
+    input: Color(0xFF494B50),
+    ring: Color(0xFFFBB26A),
+    destructive: Color(0xFFEB5757),
+    destructiveForeground: Color(0xFF0E0E11),
+    warning: Color(0xFFEAB308),
+    info: Color(0xFF878B91),
+    success: Color(0xFF3FBF6B),
+    blupConnected: Color(0xFFFBB26A),
+    blupError: Color(0xFFEB5757),
+    blupIdle: Color(0xFFD7D8DB),
+    blupConnecting: Color(0xFF261E1A),
   );
 
-  /// Светлая тема из DESIGN.md: canvas #F8FAFC, карточки #FFFFFF,
-  /// secondary/muted #F1F5F9, текст #020617, primary #16A34A.
+  /// Светлая тема. В Amnezia Client её нет — приложение тёмное. Здесь она
+  /// нужна потому, что Visp умеет следовать системной: те же роли,
+  /// инвертированные значения, акцент затемнён для контраста на светлом.
   static const light = SemanticColors._(
-    background: Color(0xFFF8FAFC),
-    foreground: Color(0xFF020617),
+    background: Color(0xFFF7F5F2),
     card: Color(0xFFFFFFFF),
-    cardForeground: Color(0xFF020617),
+    surfaceHover: Color(0xFFEFEDE9),
+    cardForeground: Color(0xFF1C1D21),
     popover: Color(0xFFFFFFFF),
-    popoverForeground: Color(0xFF020617),
-    primary: Color(0xFF16A34A),
+    popoverForeground: Color(0xFF1C1D21),
+    muted: Color(0xFFEBE8E3),
+    foreground: Color(0xFF1C1D21),
+    mutedForeground: Color(0xFF6B6B70),
+    // Акцент затемнён до 5.2:1 на белом: в светлой теме янтарный используется
+    // и как текст (подпись активной вкладки 11 px, выбранная строка), и как
+    // заливка кнопки с белой подписью, поэтому должен проходить AA в обе стороны.
+    // #B4701F давал 3.98:1 и не проходил ни там, ни там.
+    primary: Color(0xFF9A5F14),
     primaryForeground: Color(0xFFFFFFFF),
-    primaryBright: Color(0xFF15803D),
-    secondary: Color(0xFFF1F5F9),
-    secondaryForeground: Color(0xFF0F172A),
-    muted: Color(0xFFF1F5F9),
-    mutedForeground: Color(0xFF475569),
-    accent: Color(0xFFF1F5F9),
-    accentForeground: Color(0xFF0F172A),
-    destructive: Color(0xFFB93F31),
+    primaryBright: Color(0xFFD9963F),
+    primaryPressed: Color(0xFF7A4A0F),
+    secondary: Color(0xFFEBE8E3),
+    secondaryForeground: Color(0xFF1C1D21),
+    accent: Color(0xFFEBE8E3),
+    accentForeground: Color(0xFF1C1D21),
+    border: Color(0xFFE2DFDA),
+    borderStrong: Color(0xFFC9C5BE),
+    input: Color(0xFFC9C5BE),
+    ring: Color(0xFF9A5F14),
+    destructive: Color(0xFFC5322F),
     destructiveForeground: Color(0xFFFFFFFF),
-    border: Color(0xFFE2E8F0),
-    input: Color(0xFFCBD5E1),
-    ring: Color(0xFF16A34A),
-    warning: Color(0xFF8A6A14),
-    info: Color(0xFF2D5F96),
-    blupConnected: Color(0xFF3E9C6E),
-    blupError: Color(0xFFC4503F),
-    blupIdle: Color(0xFF7C8C80),
+    warning: Color(0xFF9A6B00),
+    info: Color(0xFF5A5A60),
+    success: Color(0xFF2E8B4F),
+    blupConnected: Color(0xFFB4701F),
+    blupError: Color(0xFFC5322F),
+    blupIdle: Color(0xFF6B6B70),
+    blupConnecting: Color(0xFFEFE0CE),
   );
 
   static SemanticColors of(BuildContext context) {
@@ -177,10 +226,9 @@ class SemanticColors {
   }
 
   // --- Совместимость со старыми именами токенов -----------------------------
-  // Мост для постепенной миграции компонентов на shadcn-имена.
 
   Color get surface1 => card;
-  Color get surface2 => secondary;
+  Color get surface2 => muted;
   Color get textPrimary => foreground;
   Color get textSecondary => mutedForeground;
   Color get danger => destructive;

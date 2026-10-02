@@ -5,8 +5,11 @@ import '../theme/app_colors.dart';
 import '../theme/app_spacing.dart';
 import '../theme/app_text_styles.dart';
 
-/// Строка списка Visp: иконка, заголовок, однострочное описание,
-/// завершающее состояние/действие. Минимальная высота 52 px.
+/// Строка списка Visp в стиле Amnezia Client.
+///
+/// Иконка 20 px, заголовок, однострочное описание, завершающее состояние.
+/// Минимальная высота 56 px — это размер строки в Amnezia, и он же
+/// достаточен для касания. Строка без рамки: группу рисует [VispListGroup].
 class VispListRow extends StatelessWidget {
   const VispListRow({
     super.key,
@@ -20,6 +23,7 @@ class VispListRow extends StatelessWidget {
     this.destructive = false,
     this.padding,
     this.maxLinesDescription = 1,
+    this.selected = false,
   });
 
   final String title;
@@ -33,11 +37,17 @@ class VispListRow extends StatelessWidget {
   final EdgeInsetsGeometry? padding;
   final int maxLinesDescription;
 
+  /// Выбранная строка: заголовок переходит в акцент, как в Amnezia.
+  final bool selected;
+
   @override
   Widget build(BuildContext context) {
     final colors = SemanticColors.of(context);
-    final titleColor =
-        destructive ? colors.danger : colors.textPrimary;
+    final titleColor = destructive
+        ? colors.destructive
+        : selected
+            ? colors.primary
+            : colors.foreground;
 
     final content = Row(
       children: [
@@ -47,7 +57,12 @@ class VispListRow extends StatelessWidget {
             child: VispIcon(
               icon!,
               size: 20,
-              color: destructive ? colors.danger : colors.textSecondary,
+              filled: selected,
+              color: destructive
+                  ? colors.destructive
+                  : selected
+                      ? colors.primary
+                      : colors.mutedForeground,
             ),
           ),
         Expanded(
@@ -57,10 +72,9 @@ class VispListRow extends StatelessWidget {
             children: [
               Text(
                 title,
-                style: AppTextStyles.body.copyWith(
-                  color: titleColor,
-                  fontWeight: FontWeight.w500,
-                ),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: AppTextStyles.body.copyWith(color: titleColor),
               ),
               if (description != null)
                 Padding(
@@ -69,8 +83,8 @@ class VispListRow extends StatelessWidget {
                     description!,
                     maxLines: maxLinesDescription,
                     overflow: TextOverflow.ellipsis,
-                    style: AppTextStyles.small.copyWith(
-                      color: colors.textSecondary,
+                    style: AppTextStyles.label.copyWith(
+                      color: colors.mutedForeground,
                     ),
                   ),
                 ),
@@ -90,25 +104,29 @@ class VispListRow extends StatelessWidget {
       ],
     );
 
-    final minHeight = 52.0;
-    return InkWell(
-      onTap: onTap,
-      child: ConstrainedBox(
-        constraints: BoxConstraints(minHeight: minHeight),
-        child: Padding(
-          padding: padding ??
-              const EdgeInsets.symmetric(
-                horizontal: AppSpacing.l,
-                vertical: AppSpacing.s,
-              ),
-          child: content,
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onTap,
+        hoverColor: colors.surfaceHover,
+        splashColor: colors.accent,
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(minHeight: 56),
+          child: Padding(
+            padding: padding ??
+                const EdgeInsets.symmetric(
+                  horizontal: AppSpacing.l,
+                  vertical: AppSpacing.s,
+                ),
+            child: content,
+          ),
         ),
       ),
     );
   }
 }
 
-/// Заголовок группы настроек/секции.
+/// Заголовок группы настроек: мелкая подпись с разрядкой, как в Amnezia.
 class VispSectionHeader extends StatelessWidget {
   const VispSectionHeader({super.key, required this.text});
 
@@ -126,9 +144,8 @@ class VispSectionHeader extends StatelessWidget {
       ),
       child: Text(
         text.toUpperCase(),
-        style: AppTextStyles.small.copyWith(
-          color: colors.textSecondary,
-          fontWeight: FontWeight.w600,
+        style: AppTextStyles.badge.copyWith(
+          color: colors.mutedForeground,
           letterSpacing: 0.8,
         ),
       ),
@@ -136,7 +153,10 @@ class VispSectionHeader extends StatelessWidget {
   }
 }
 
-/// Группа строк в одной карточке с разделителями между строками.
+/// Группа строк в одной плоской карточке с разделителями.
+///
+/// Радиус 16 и волосяная рамка — как у CardType в Amnezia. Строки внутри
+/// рамок не имеют собственных: это плоская поверхность, а не набор карточек.
 class VispListGroup extends StatelessWidget {
   const VispListGroup({super.key, required this.children});
 
@@ -147,8 +167,8 @@ class VispListGroup extends StatelessWidget {
     final colors = SemanticColors.of(context);
     return DecoratedBox(
       decoration: BoxDecoration(
-        color: colors.surface1,
-        borderRadius: AppRadius.lAll,
+        color: colors.card,
+        borderRadius: AppRadius.sAll,
         border: Border.all(color: colors.border),
       ),
       child: Column(
