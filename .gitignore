@@ -1,11 +1,11 @@
-# Git
-.git/
-
 # Сборочные каталоги Flutter
 build/
 **/.dart_tool/
+.flutter-plugins
+.flutter-plugins-dependencies
 
-# Ephemeral-каталоги Flutter по платформам
+# Ephemeral-каталоги Flutter по платформам.
+# Полные правила для ios/macos/linux/windows лежат в одноимённых .gitignore.
 windows/flutter/ephemeral/
 linux/flutter/ephemeral/
 macos/Flutter/ephemeral/
@@ -13,12 +13,19 @@ ios/Pods/
 ios/.symlinks/
 ios/Flutter/ephemeral/
 
+# Секреты окружения
+.env
+.env.*
+!.env.example
+
 # IDE
 .idea/
 .vscode/
 *.iml
 
-# Крупные бинарники и артефакты
+# Крупные бинарники и артефакты.
+# Исключение: android/app/libs/amneziawg-bridge.aar обязателен в репозитории,
+# иначе сборка на чистой машине не запустит AmneziaWG.
 *.fig
 *.apk
 *.aab
@@ -30,14 +37,27 @@ ios/Flutter/ephemeral/
 *.so
 *.a
 
-# Flutter-артефакты (регерируются автоматически)
-.flutter-plugins-dependencies
-
 # Gradle / CocoaPods локальные кэши
 .gradle/
 
+# Coverage
+coverage/
+
+# Инструментальные скрипты
+node_modules/
+
 # Логи
 *.log
+
+# Мусор ОС
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Остатки конфликтов слияния
+*.orig
+*.rej
+*.bak
 
 # Тимповые файлы (пустые/отладочные)
 _*.txt
@@ -45,6 +65,8 @@ _*.html
 _*.js
 _*.png
 
-# AI
+# Локальные инструкции для ИИ-агентов: осознанно не попадают в репозиторий.
+# Ключи Android (key.properties, *.jks, *.keystore) и .cxx/ исключены
+# в android/.gitignore, local.properties и Generated.xcconfig — в платформенных.
 AGENTS.md
 CLAUDE.md
