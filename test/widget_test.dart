@@ -55,6 +55,18 @@ test('иконки Visp ссылаются на подключённый шри�
     expect(find.text('QR-код'), findsOneWidget);
   });
 
+  testWidgets('навигационный бар не растягивается на весь экран', (tester) async {
+    await bootstrap(tester);
+
+    final navRect = tester.getRect(find.byType(VispFloatingNav));
+    // Бар — плавающая полоса внизу, а не растянутая на весь экран панель.
+    expect(navRect.height, lessThan(120),
+        reason: 'высота навбара должна быть компактной');
+    expect(navRect.height, greaterThan(40));
+    // И находится внизу экрана, а не по центру.
+    expect(navRect.bottom, closeTo(600, 1));
+  });
+
   testWidgets('кнопка расположена по центру блюпа', (tester) async {
     await bootstrap(tester);
 

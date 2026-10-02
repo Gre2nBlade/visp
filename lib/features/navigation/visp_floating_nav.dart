@@ -33,8 +33,9 @@ class VispFloatingNav extends StatelessWidget {
   /// Режим стекла: без стекла, матовое или обычное (раздел 11.2).
   final GlassMode glassMode;
 
-  // Высота не фиксируется жёстко: «таблетка» с увеличенной иконкой
-  // должна помещаться на любом экране, поэтому бар растёт под содержимое.
+  // Высота задаётся явно: без неё Row внутри Stack получал бы неограниченную
+  // высоту и бар растягивался на весь экран. Значение учитывает увеличенную
+  // активную «таблетку» с иконкой 26 px и подписью.
   static const _barHeight = 68.0;
   static const _barPadding = 6.0;
 
@@ -51,19 +52,23 @@ class VispFloatingNav extends StatelessWidget {
           AppSpacing.l,
           AppSpacing.s,
         ),
-        child: Row(
-          children: [
-            Expanded(
-              child: VispGlassCapsule(
-                enabled: glassMode != GlassMode.none,
-                radius: _barHeight / 2,
-                padding: const EdgeInsets.all(_barPadding),
-                child: LayoutBuilder(
-                  builder: (context, constraints) {
-                    final tabWidth =
-                        constraints.maxWidth / destinations.length;
-                    return Stack(
-                      children: [
+        child: SizedBox(
+          // Фиксируем высоту всего бара: кнопка «+» задаёт её снизу,
+          // капсула вкладок растягивается по ней.
+          height: _barHeight,
+          child: Row(
+            children: [
+              Expanded(
+                child: VispGlassCapsule(
+                  enabled: glassMode != GlassMode.none,
+                  radius: _barHeight / 2,
+                  padding: const EdgeInsets.all(_barPadding),
+                  child: LayoutBuilder(
+                    builder: (context, constraints) {
+                      final tabWidth =
+                          constraints.maxWidth / destinations.length;
+                      return Stack(
+                        children: [
                           AnimatedPositioned(
                             duration: const Duration(milliseconds: 220),
                             curve: Curves.easeOutCubic,
@@ -73,41 +78,46 @@ class VispFloatingNav extends StatelessWidget {
                             width: tabWidth - 6,
                             child: DecoratedBox(
                               decoration: BoxDecoration(
-                                color: colors.primary.withValues(alpha: 0.16),
-                                borderRadius: BorderRadius.circular(AppRadius.m),
+                                color:
+                                    colors.primary.withValues(alpha: 0.16),
+                                borderRadius:
+                                    BorderRadius.circular(AppRadius.m),
                                 border: Border.all(
-                                  color:
-                                      colors.primary.withValues(alpha: 0.35),
+                                  color: colors.primary.withValues(alpha: 0.35),
                                 ),
                               ),
                             ),
                           ),
                           Row(
-                            children: List.generate(destinations.length, (i) {
-                              final d = destinations[i];
-                              final selected = i == currentIndex;
-                              return Expanded(
-                                child: _NavTab(
-                                  destination: d,
-                                  selected: selected,
-                                  onTap: () {
-                                    if (i == currentIndex) return;
-                                    Haptics.light(context);
-                                    onTap(i);
-                                  },
-                                ),
-                              );
-                            }),
+                            children: List.generate(
+                              destinations.length,
+                              (i) {
+                                final d = destinations[i];
+                                final selected = i == currentIndex;
+                                return Expanded(
+                                  child: _NavTab(
+                                    destination: d,
+                                    selected: selected,
+                                    onTap: () {
+                                      if (i == currentIndex) return;
+                                      Haptics.light(context);
+                                      onTap(i);
+                                    },
+                                  ),
+                                );
+                              },
+                            ),
                           ),
                         ],
-                    );
-                  },
+                      );
+                    },
+                  ),
                 ),
               ),
-            ),
-            const SizedBox(width: AppSpacing.s + 2),
-            _AddButton(glassMode: glassMode, onTap: onAdd),
-          ],
+              const SizedBox(width: AppSpacing.s + 2),
+              _AddButton(glassMode: glassMode, onTap: onAdd),
+            ],
+          ),
         ),
       ),
     );

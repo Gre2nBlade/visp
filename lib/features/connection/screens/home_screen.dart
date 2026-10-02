@@ -200,10 +200,10 @@ class _ConnectedHome extends StatelessWidget {
                       const SizedBox(height: AppSpacing.xl),
                       _StatusText(state: state, s: s),
                       const Spacer(),
-                      // Фигура в потоке колонки, а не поверх неё: кнопка
-                      // в центре не перекрывается статусом и селектором.
-                      BlupLayer(state: state),
-                      const Spacer(),
+                      // Фигура занимает свободную область: блюп сам
+                      // подстраивается под неё, поэтому колонка не может
+                      // переполниться ни на одном экране.
+                      Expanded(child: BlupLayer(state: state)),
                       if (state.errorText != null)
                         Padding(
                           padding: const EdgeInsets.fromLTRB(

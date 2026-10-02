@@ -17,25 +17,32 @@ class BlupLayer extends StatelessWidget {
 
   final AppState state;
 
-  @override
+@override
   Widget build(BuildContext context) {
-final media = MediaQuery.of(context);
-    // Фигура занимает всю доступную ширину с запасом под отступы: так она
-    // читается как центр композиции, а элементы управления остаются
-    // отдельно сверху и снизу.
-    final size = (media.size.width - 104).clamp(160.0, 236.0);
+    // Размер считается от реально доступной высоты, а не от экрана: колонка
+    // главного экрана отдаёт фигуре остаток после статуса, селектора и
+    // карточки сервера. Иначе на низких экранах возникает переполнение.
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final media = MediaQuery.of(context);
+        final byWidth = media.size.width - 104;
+        final byHeight = constraints.maxHeight - 8;
+        final size = (byWidth < byHeight ? byWidth : byHeight)
+            .clamp(96.0, 236.0);
 
-    return Center(
-      child: BlupVisp(
-        status: state.status,
-        size: size,
-        trafficPulse: state.trafficPulse,
-        action: BlupAction(
-          status: state.status,
-          onCancel: state.cancelConnect,
-          onTap: () => _onTap(context),
-        ),
-      ),
+        return Center(
+          child: BlupVisp(
+            status: state.status,
+            size: size,
+            trafficPulse: state.trafficPulse,
+            action: BlupAction(
+              status: state.status,
+              onCancel: state.cancelConnect,
+              onTap: () => _onTap(context),
+            ),
+          ),
+        );
+      },
     );
   }
 
