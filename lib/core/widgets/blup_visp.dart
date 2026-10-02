@@ -66,6 +66,7 @@ class BlupVisp extends StatefulWidget {
     this.compact = false,
     this.trafficPulse = false,
     this.motionReduced = false,
+    this.action,
   });
 
   final BlupStatus status;
@@ -77,6 +78,12 @@ class BlupVisp extends StatefulWidget {
 
   /// Принудительная ститика для reduced-motion и слабых устройств.
   final bool motionReduced;
+
+  /// Действие в центре фигуры (кнопка подключения).
+  ///
+  /// Кнопка живёт внутри блупа, а не под ним: центр экрана остаётся
+  /// единым целым, и главное действие не уводит взгляд вниз.
+  final Widget? action;
 
   @override
   State<BlupVisp> createState() => _BlupVispState();
@@ -160,15 +167,24 @@ class _BlupVispState extends State<BlupVisp>
       child: SizedBox(
         width: widget.size,
         height: widget.size,
-        child: CustomPaint(
-          painter: _BlupPainter(
-            progress: animation.value,
-            status: widget.status,
-            compact: widget.compact,
-            trafficPulse: widget.trafficPulse,
-            seed: _seed,
-            brightness: Theme.of(context).brightness,
-          ),
+        child: Stack(
+          alignment: Alignment.center,
+          children: [
+            Positioned.fill(
+              child: CustomPaint(
+                painter: _BlupPainter(
+                  progress: animation.value,
+                  status: widget.status,
+                  compact: widget.compact,
+                  trafficPulse: widget.trafficPulse,
+                  seed: _seed,
+                  brightness: Theme.of(context).brightness,
+                ),
+              ),
+            ),
+            // Кнопка в центре фигуры: действие не уводит взгляд с блупа.
+            if (widget.action != null) widget.action!,
+          ],
         ),
       ),
     );

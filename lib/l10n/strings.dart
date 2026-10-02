@@ -42,6 +42,8 @@ class S {
   String get disconnect => this == ru ? 'Отключить' : 'Disconnect';
   String get cancelConnection => this == ru ? 'Отменить' : 'Cancel';
   String get trafficBlocked => this == ru ? 'Трафик заблокирован' : 'Traffic is blocked';
+  String get retry => this == ru ? 'Повторить' : 'Retry';
+  String get unblock => this == ru ? 'Разблокировать' : 'Unblock';
   String get sessionLost => this == ru
       ? 'Старая сессия потеряна, переподключение'
       : 'Previous session lost, reconnecting';

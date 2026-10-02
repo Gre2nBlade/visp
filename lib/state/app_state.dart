@@ -410,6 +410,9 @@ class AppState extends ChangeNotifier {
     _connectingCancelled = true;
     _connectToken++;
     _ticker?.cancel();
+    // Гасим ожидание текущей фазы: иначе таймер продолжит висеть после
+    // отмены, и приложение будет ждать его вхолостую.
+    _cancelPendingTick();
     _setStatus(BlupStatus.idle, detail: null);
   }
 
@@ -418,6 +421,7 @@ class AppState extends ChangeNotifier {
     _connectToken++;
     _connectingCancelled = true;
     _ticker?.cancel();
+    _cancelPendingTick();
     // Нативный туннель останавливается ядром, а не только флагом в UI.
     final engine = selectedProfile == null
         ? null
@@ -460,12 +464,50 @@ class AppState extends ChangeNotifier {
     notifyListeners();
   }
 
+  /// Ожидание фазы подключения.
+  ///
+  /// Используется отменяемый таймер, а не Future.delayed: иначе отмена
+  /// оставляла бы висящее ожидание. Отмена завершает ожидание тихо и без
+  /// исключения — вызывающая сторона проверяет [_cancelled] и выходит сама.
   Future<void> _tick(int token, Duration duration) async {
-    await Future.delayed(duration);
-    if (_cancelled(token)) {
-      throw _CancelledException();
+    // Отмена могла прийти до того, как фаза успела создать таймер.
+    // Проверяем до создания, иначе остался бы таймер, который уже никто
+    // не сможет погасить.
+    if (_cancelled(token)) return;
+
+    final completer = Completer<void>();
+    final timer = Timer(duration, () {
+      if (!completer.isCompleted) completer.complete();
+    });
+    _pendingTick = timer;
+    _pendingTickCompleter = completer;
+    try {
+      await completer.future;
+    } finally {
+      _pendingTick = null;
+      _pendingTickCompleter = null;
+      timer.cancel();
     }
   }
+
+  Timer? _pendingTick;
+
+  /// Отмена ожидания фазы: таймер гасится, а ожидание сразу завершается.
+  ///
+  /// Иначе отмена только убирала бы таймер, но оставляла бы async-функцию
+  /// висеть на неразрешённом completer — подключение ждало бы вхолостую.
+  void _cancelPendingTick() {
+    final timer = _pendingTick;
+    _pendingTick = null;
+    timer?.cancel();
+    final completer = _pendingTickCompleter;
+    _pendingTickCompleter = null;
+    if (completer != null && !completer.isCompleted) {
+      completer.complete();
+    }
+  }
+
+  Completer<void>? _pendingTickCompleter;
 
   bool _cancelled(int token) =>
       _connectingCancelled || token != _connectToken;
@@ -871,4 +913,4 @@ class AppState extends ChangeNotifier {
   }
 }
 
-class _CancelledException implements Exception {}
+

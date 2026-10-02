@@ -7,6 +7,7 @@ import '../../../core/icons/visp_icon.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_spacing.dart';
 import '../../../core/theme/app_text_styles.dart';
+import '../../../core/widgets/blup_action.dart';
 import '../../../core/widgets/blup_visp.dart';
 import '../../../core/widgets/visp_button.dart';
 import '../../../core/widgets/visp_chip.dart';
@@ -188,31 +189,36 @@ class _ConnectedHome extends StatelessWidget {
       child: Column(
         children: [
           Expanded(
-            // Blup Visp стоит в геометрическом центре доступной области,
-            // а элементы управления прижаты к низу: центр экрана остаётся
-            // пустым, композиция читается с одного взгляда.
+            // Blup Visp с кнопкой в центре фигуры. Отдельной кнопки
+            // «Подключиться» под ним нет: главное действие не уводит
+            // взгляд с фигуры (раздел 4.1, 8.1).
             child: Stack(
               children: [
-                Positioned.fill(
-                  child: Center(
-                    child: BlupVisp(
-                      status: state.status,
-                      size: 208,
-                      trafficPulse: state.trafficPulse,
-                      motionReduced: _motionReduced(context),
-                    ),
-                  ),
-                ),
                 Positioned.fill(
                   child: Column(
                     children: [
                       const SizedBox(height: AppSpacing.xl),
                       _StatusText(state: state, s: s),
                       const Spacer(),
+                      // Blup и кнопка в его центре — геометрический центр
+                      // доступной области экрана.
+                      Center(
+                        child: BlupVisp(
+                          status: state.status,
+                          size: 236,
+                          trafficPulse: state.trafficPulse,
+                          motionReduced: _motionReduced(context),
+                          action: _BlupCenterAction(state: state, s: s),
+                        ),
+                      ),
+                      const Spacer(),
                       if (state.errorText != null)
                         Padding(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: AppSpacing.xl,
+                          padding: const EdgeInsets.fromLTRB(
+                            AppSpacing.xl,
+                            0,
+                            AppSpacing.xl,
+                            AppSpacing.m,
                           ),
                           child: Text(
                             state.errorText!,
@@ -233,13 +239,6 @@ class _ConnectedHome extends StatelessWidget {
                           ),
                         ),
                       _ProtocolSelector(state: state),
-                      const SizedBox(height: AppSpacing.l),
-                      Padding(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: AppSpacing.xl,
-                        ),
-                        child: _ConnectButton(state: state, s: s),
-                      ),
                       if (state.debugVisible) ...[
                         const SizedBox(height: AppSpacing.l),
                         Padding(
@@ -482,68 +481,41 @@ class _ProtocolSelector extends StatelessWidget {
   }
 }
 
-class _ConnectButton extends StatelessWidget {
-  const _ConnectButton({required this.state, required this.s});
+/// Кнопка в центре блупа: запускает и останавливает туннель.
+///
+/// Логика та же, что была у отдельной кнопки подключения, но без текстовой
+/// подписи — состояние читается по иконке и подсказке.
+class _BlupCenterAction extends StatelessWidget {
+  const _BlupCenterAction({required this.state, required this.s});
 
   final AppState state;
   final S s;
 
   @override
   Widget build(BuildContext context) {
-    final isInProgress = state.status == BlupStatus.preparing ||
-        state.status == BlupStatus.checking ||
-        state.status == BlupStatus.connecting ||
-        state.status == BlupStatus.reconnecting;
-    final isConnected = state.status == BlupStatus.connected;
-
-    if (isInProgress) {
-      return Row(
-        children: [
-          Expanded(
-            child: VispButton(
-              label: s.cancelConnection,
-              style: VispButtonStyle.secondary,
-              icon: VispIcons.close,
-              onPressed: state.cancelConnect,
-            ),
-          ),
-        ],
-      );
-    }
-
-    return Row(
-      children: [
-        Expanded(
-          child: VispButton(
-            label: isConnected ? s.disconnect : s.connect,
-            size: VispButtonSize.prominent,
-            icon: isConnected ? VispIcons.close : VispIcons.plug,
-            style: isConnected ? VispButtonStyle.danger : VispButtonStyle.primary,
-            onPressed: () async {
-              if (isConnected) {
-                state.disconnect();
-                return;
-              }
-              if (state.selectedProfile == null) {
-                VispToast.showError(
-                  context,
-                  s.notChosen,
-                  actionLabel: s.addConnection,
-                  onAction: () => AddConnectionScreen.open(context),
-                );
-                return;
-              }
-              await state.connect();
-            },
-          ),
-        ),
-      ],
+    return BlupAction(
+      status: state.status,
+      onCancel: state.cancelConnect,
+      onTap: () async {
+        if (state.status == BlupStatus.connected) {
+          state.disconnect();
+          return;
+        }
+        if (state.selectedProfile == null) {
+          VispToast.showError(
+            context,
+            s.notChosen,
+            actionLabel: s.addConnection,
+            onAction: () => AddConnectionScreen.open(context),
+          );
+          return;
+        }
+        await state.connect();
+      },
     );
   }
 }
 
-/// Debug-информация под хамелеоном (раздел 4.2): скорость, пинг, сессия.
-/// Переключатель не включает отправку диагностики автоматически.
 class _DebugBlock extends StatelessWidget {
   const _DebugBlock({required this.state});
 
