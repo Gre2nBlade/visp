@@ -66,6 +66,7 @@ class _RootShellState extends State<RootShell> {
         onTap: (i) => setState(() => _index = i),
         onAdd: _onAdd,
         glassMode: state.glassMode,
+        showLabels: state.navLabelsVisible,
       ),
     );
   }

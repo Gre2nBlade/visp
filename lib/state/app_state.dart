@@ -1,10 +1,11 @@
-import 'dart:async';
+﻿import 'dart:async';
 import 'dart:math' as math;
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter/widgets.dart';
 
 import '../core/feedback/haptics.dart';
+import '../core/feedback/visp_error.dart';
 import '../core/widgets/blup_visp.dart';
 import '../features/connection/models/connection_models.dart';
 import '../features/connection/services/amneziawg_engine.dart';
@@ -39,7 +40,7 @@ class AppState extends ChangeNotifier {
   BlupStatus _status = BlupStatus.idle;
 
   /// Текстовая причина ошибки: декоративный эффект не маскирует ошибку.
-  String? _errorText;
+  VispError? _error;
   String? _statusDetail;
 
   bool _trafficPulse = false;
@@ -73,6 +74,7 @@ class AppState extends ChangeNotifier {
   bool _proxyInstalled = false;
   bool _devRole = false;
   bool _debugVisible = false;
+  bool _navLabels = true;
   String? _localeCode;
   bool _killSwitch = false;
   bool _autostart = false;
@@ -83,7 +85,10 @@ class AppState extends ChangeNotifier {
   List<ServerHost> get hosts => List.unmodifiable(_hosts);
   List<ProxyRecord> get proxies => List.unmodifiable(_proxies);
   BlupStatus get status => _status;
-  String? get errorText => _errorText;
+  VispError? get error => _error;
+
+  /// Однострочный текст ошибки для тостов и заголовков.
+  String? get errorText => _error?.summary;
   String? get statusDetail => _statusDetail;
   bool get trafficPulse => _trafficPulse;
   bool get hasConnections => _hosts.any((h) => h.profiles.isNotEmpty);
@@ -112,6 +117,9 @@ class AppState extends ChangeNotifier {
   bool get proxyInstalled => _proxyInstalled;
   bool get devRole => _devRole;
   bool get debugVisible => _debugVisible;
+
+  /// Показывать ли подписи вкладок в навигации.
+  bool get navLabelsVisible => _navLabels;
   bool get killSwitch => _killSwitch;
   bool get autostart => _autostart;
   bool get splitTunneling => _splitTunneling;
@@ -157,6 +165,7 @@ class AppState extends ChangeNotifier {
     _proxyInstalled = Preferences.proxyInstalled;
     _devRole = Preferences.devRole;
     _debugVisible = Preferences.debugVisible;
+    _navLabels = Preferences.navLabels;
     _localeCode = Preferences.locale;
     _killSwitch = Preferences.killSwitch;
     _autostart = Preferences.autostart;
@@ -295,13 +304,13 @@ class AppState extends ChangeNotifier {
     if (isActive) return;
     final profile = selectedProfile;
     if (profile == null) {
-      _fail('Не выбран профиль подключения');
+      _fail(const VispError(VispErrorCode.noProfileSelected));
       return;
     }
 
     final token = ++_connectToken;
     _connectingCancelled = false;
-    _errorText = null;
+    _error = null;
 
     _setStatus(BlupStatus.preparing, detail: 'Подготовка модуля');
     await _tick(token, const Duration(milliseconds: 900));
@@ -311,8 +320,10 @@ class AppState extends ChangeNotifier {
     // первом подключении, если ОС и канал допускают (раздел 3.4).
     if (profile.engineState != EngineState.ready) {
       if (profile.engineState == EngineState.unsupported) {
-        _fail('Движок ${profile.protocol.displayName} недоступен на этой '
-            'платформе. Подключение невозможно.');
+        _fail(VispError(
+          VispErrorCode.engineUnavailable,
+          detail: 'Протокол ${profile.protocol.displayName}',
+        ));
         return;
       }
       _setEngineState(profile, EngineState.downloading);
@@ -349,8 +360,10 @@ class AppState extends ChangeNotifier {
     }
 
     if (engine == null && hasNativeEngine) {
-      _fail('Для протокола ${profile.protocol.displayName} нет собранного ядра. '
-          'Профиль сохранён, но туннель не поднять.');
+      _fail(VispError(
+        VispErrorCode.engineMissing,
+        detail: 'Протокол ${profile.protocol.displayName}',
+      ));
       return;
     }
 
@@ -368,22 +381,35 @@ class AppState extends ChangeNotifier {
   }
 
   /// Понятная причина вместо технического кода движка.
-  String _engineError(EngineResult result, ProtocolProfile profile) {
+///
+/// Движок сообщает о результате обобщённо, а пользователю нужен код ошибки,
+/// короткий заголовок и подсказка. Имя протокола уходит в детали, а не в
+/// заголовок: иначе строка растягивалась на весь экран.
+VispError _engineError(EngineResult result, ProtocolProfile profile) {
     final name = profile.protocol.displayName;
     switch (result) {
       case EngineResult.connected:
-        return '';
+        return const VispError(VispErrorCode.tunnelFailed);
       case EngineResult.permissionDenied:
-        return 'Нет разрешения на VPN. Разрешите его в настройках, чтобы '
-            'подключиться через $name.';
+        return VispError(
+          VispErrorCode.permissionDenied,
+          detail: 'Протокол $name',
+        );
       case EngineResult.invalidConfig:
-        return 'В конфигурации не хватает обязательных параметров '
-            '(приватный ключ и порт). Импортируйте полный конфиг.';
+        return VispError(
+          VispErrorCode.missingParameters,
+          detail: 'Протокол $name',
+        );
       case EngineResult.engineMissing:
-        return 'Ядро $name не установлено. Профиль сохранён.';
+        return VispError(
+          VispErrorCode.engineMissing,
+          detail: 'Протокол $name',
+        );
       case EngineResult.failed:
-        return 'Не удалось поднять туннель $name. Проверьте конфигурацию и '
-            'доступность сервера.';
+        return VispError(
+          VispErrorCode.tunnelFailed,
+          detail: 'Протокол $name',
+        );
     }
   }
 
@@ -434,21 +460,21 @@ class AppState extends ChangeNotifier {
     _sessionStart = null;
     _sessionDuration = Duration.zero;
     _trafficPulse = false;
-    _errorText = null;
+    _error = null;
     _setStatus(BlupStatus.idle, detail: null);
   }
 
   /// Потеря сессии: плавное переподключение без сброса в начальную фазу.
   Future<void> reconnect() async {
     if (isActive) return;
-    _errorText = null;
+    _error = null;
     _setStatus(BlupStatus.reconnecting, detail: 'Переподключение');
     await Future.delayed(const Duration(milliseconds: 700));
     await connect();
   }
 
-  void _fail(String reason) {
-    _errorText = reason;
+  void _fail(VispError reason) {
+    _error = reason;
     _ping = null;
     _downSpeed = null;
     _upSpeed = null;
@@ -852,6 +878,13 @@ class AppState extends ChangeNotifier {
     notifyListeners();
   }
 
+  /// Подписи вкладок в навигации: по умолчанию показываются.
+  void setNavLabels(bool value) {
+    _navLabels = value;
+    Preferences.navLabels = value;
+    notifyListeners();
+  }
+
   void setLocale(String? code) {
     _localeCode = code;
     Preferences.locale = code;
@@ -898,7 +931,8 @@ class AppState extends ChangeNotifier {
     _devRole = false;
     _studioPinned = false;
     _glassMode = GlassMode.regular;
-    _debugVisible = false;
+_debugVisible = false;
+    _navLabels = true;
     _killSwitch = false;
     _autostart = false;
     _splitTunneling = false;

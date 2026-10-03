@@ -9,12 +9,13 @@ import '../../core/widgets/visp_glass.dart';
 import '../../state/preferences.dart';
 import 'nav_destination.dart';
 
-/// Плавающий навигационный бар: стеклянная капсула с базовыми вкладками
-/// и отдельной круглой кнопкой «+» (раздел 4.6).
+/// Плавающий навигационный бар: стеклянная пилюля с вкладками и отдельной
+/// круглой кнопкой «+».
 ///
 /// Активная вкладка выделяется подложкой-пилюлей, которая плавно переезжает
-/// между позициями. Состав вкладок зависит от установленных плагинов и
-/// закрепления Studio, а не фиксируется как четыре.
+/// между позициями. Вокруг иконки отдельной рамки нет: прямоугольник вокруг
+/// иконки дрожал визуально и дублировал подложку. Состав вкладок зависит от
+/// установленных плагинов и закрепления Studio, а не фиксируется как четыре.
 class VispFloatingNav extends StatelessWidget {
   const VispFloatingNav({
     super.key,
@@ -23,6 +24,7 @@ class VispFloatingNav extends StatelessWidget {
     required this.onTap,
     required this.onAdd,
     required this.glassMode,
+    this.showLabels = true,
   });
 
   final List<NavDestination> destinations;
@@ -30,18 +32,27 @@ class VispFloatingNav extends StatelessWidget {
   final ValueChanged<int> onTap;
   final VoidCallback onAdd;
 
-  /// Режим стекла: без стекла, матовое или обычное (раздел 11.2).
+  /// Режим стекла: без стекла или обычное (раздел 11.2).
   final GlassMode glassMode;
 
-  // Высота задаётся явно: без неё Row внутри Stack получал бы неограниченную
-  // высоту и бар растягивался на весь экран. Значение учитывает увеличенную
-  // активную «таблетку» с иконкой 26 px и подписью.
-  static const _barHeight = 68.0;
+  /// Показывать ли подписи вкладок. Выключается в настройках тем.
+  final bool showLabels;
+
+  /// Высота задаётся явно: без неё Row внутри Stack получал бы неограниченную
+  // высоту и бар растягивался на весь экран. Без подписей панель ниже, и
+  // иконка остаётся той же — меняется только плотность, а не размер цели.
+  static const _barHeightWithLabels = 68.0;
+  static const _barHeightIconsOnly = 58.0;
   static const _barPadding = 6.0;
 
   @override
   Widget build(BuildContext context) {
     final colors = SemanticColors.of(context);
+    final barHeight =
+        showLabels ? _barHeightWithLabels : _barHeightIconsOnly;
+    // Полукруглая пилюля: радиус равен половине внутренней высоты, поэтому
+    // торцы смыкаются в круг, а не в скруглённый прямоугольник.
+    final capsuleRadius = (barHeight / 2) - _barPadding;
 
     return SafeArea(
       top: false,
@@ -55,13 +66,13 @@ class VispFloatingNav extends StatelessWidget {
         child: SizedBox(
           // Фиксируем высоту всего бара: кнопка «+» задаёт её снизу,
           // капсула вкладок растягивается по ней.
-          height: _barHeight,
+          height: barHeight,
           child: Row(
             children: [
               Expanded(
                 child: VispGlassCapsule(
                   enabled: glassMode != GlassMode.none,
-                  radius: AppRadius.s,
+                  radius: capsuleRadius,
                   padding: const EdgeInsets.all(_barPadding),
                   child: LayoutBuilder(
                     builder: (context, constraints) {
@@ -79,11 +90,9 @@ class VispFloatingNav extends StatelessWidget {
                             child: DecoratedBox(
                               decoration: BoxDecoration(
                                 color:
-                                    colors.primary.withValues(alpha: 0.16),
-                                borderRadius:
-                                    BorderRadius.circular(AppRadius.m),
-                                border: Border.all(
-                                  color: colors.primary.withValues(alpha: 0.35),
+                                    colors.primary.withValues(alpha: 0.14),
+                                borderRadius: BorderRadius.circular(
+                                  showLabels ? 22 : capsuleRadius - 3,
                                 ),
                               ),
                             ),
@@ -98,6 +107,7 @@ class VispFloatingNav extends StatelessWidget {
                                   child: _NavTab(
                                     destination: d,
                                     selected: selected,
+                                    showLabel: showLabels,
                                     onTap: () {
                                       if (i == currentIndex) return;
                                       Haptics.light(context);
@@ -128,11 +138,13 @@ class _NavTab extends StatelessWidget {
   const _NavTab({
     required this.destination,
     required this.selected,
+    required this.showLabel,
     required this.onTap,
   });
 
   final NavDestination destination;
   final bool selected;
+  final bool showLabel;
   final VoidCallback onTap;
 
   @override
@@ -144,53 +156,51 @@ class _NavTab extends StatelessWidget {
         onTap: onTap,
         customBorder: const StadiumBorder(),
         child: Padding(
-          padding: const EdgeInsets.symmetric(vertical: AppSpacing.xs),
+          padding: const EdgeInsets.symmetric(
+            horizontal: AppSpacing.xs,
+            vertical: AppSpacing.xs,
+          ),
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              // Активная вкладка: иконка заливается янтарным. Выделение держит
-              // форма (заливка и рамка) и текст, а не только цвет.
-              AnimatedContainer(
+              // Иконка сама по себе: своей рамки и заливки у неё нет.
+              // Выделение держит подложка-пилюля позади всей вкладки плюс
+              // заливка глифа и подпись, поэтому рамка вокруг иконки была
+              // вторым, конкурирующим средством выделения.
+              AnimatedScale(
                 duration: const Duration(milliseconds: 200),
                 curve: Curves.easeOut,
-                padding: EdgeInsets.symmetric(
-                  horizontal: selected ? AppSpacing.m : AppSpacing.s,
-                  vertical: selected ? AppSpacing.xs : 2,
-                ),
-                decoration: BoxDecoration(
-                  color: selected ? colors.muted : Colors.transparent,
-                  borderRadius: BorderRadius.circular(AppRadius.sm),
-                  border: selected
-                      ? Border.all(
-                          color: colors.primary.withValues(alpha: 0.4),
-                        )
-                      : null,
-                ),
+                scale: selected ? 1.12 : 1,
                 child: VispIcon(
                   destination.icon,
-                  size: 22,
+                  size: 24,
                   filled: selected,
                   color: selected ? colors.primary : colors.mutedForeground,
                 ),
               ),
-              const SizedBox(height: 2),
-              // Подпись не должна ни переноситься по букве, ни обрезаться:
-              // при нехватке места она сжимается целиком.
-              FittedBox(
-                fit: BoxFit.scaleDown,
-                child: Text(
-                  destination.label,
-                  maxLines: 1,
-                  softWrap: false,
-                  style: AppTextStyles.badge.copyWith(
-                    fontSize: 11,
-                    height: 1.1,
-                    color: selected ? colors.primary : colors.mutedForeground,
-                    fontWeight:
-                        selected ? FontWeight.w600 : FontWeight.w400,
+              if (showLabel) ...[
+                const SizedBox(height: AppSpacing.xs - 1),
+                // Подпись не должна ни переноситься по букве, ни обрезаться:
+                // при нехватке места она сжимается целиком.
+                FittedBox(
+                  fit: BoxFit.scaleDown,
+                  child: Text(
+                    destination.label,
+                    maxLines: 1,
+                    softWrap: false,
+                    textAlign: TextAlign.center,
+                    style: AppTextStyles.badge.copyWith(
+                      fontSize: 11,
+                      height: 1.1,
+                      color: selected
+                          ? colors.primary
+                          : colors.mutedForeground,
+                      fontWeight:
+                          selected ? FontWeight.w600 : FontWeight.w400,
+                    ),
                   ),
                 ),
-              ),
+              ],
             ],
           ),
         ),

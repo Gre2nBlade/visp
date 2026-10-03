@@ -1,4 +1,4 @@
-import 'package:shared_preferences/shared_preferences.dart';
+﻿import 'package:shared_preferences/shared_preferences.dart';
 
 enum AppThemeMode { system, light, dark }
 enum UpdateChannel { stable, beta }
@@ -44,6 +44,7 @@ class Preferences {
   static const _keyProxyInstalled = 'visp.proxyInstalled';
   static const _keyDevRole = 'visp.devRole';
   static const _keyDebugVisible = 'visp.debugVisible';
+  static const _keyNavLabels = 'visp.navLabels';
   static const _keyLocale = 'visp.locale';
   static const _keyKillSwitch = 'visp.killSwitch';
   static const _keyAutostart = 'visp.autostart';
@@ -108,6 +109,10 @@ static set glass(bool v) =>
 
   static bool get debugVisible => _p.getBool(_keyDebugVisible) ?? false;
   static set debugVisible(bool v) => _p.setBool(_keyDebugVisible, v);
+
+  /// Подписи вкладок в навигации. По умолчанию показываются.
+  static bool get navLabels => _p.getBool(_keyNavLabels) ?? true;
+  static set navLabels(bool v) => _p.setBool(_keyNavLabels, v);
 
   /// 'ru' или 'en'; null — системный язык.
   static String? get locale => _p.getString(_keyLocale);

@@ -1,4 +1,4 @@
-import 'package:flutter/widgets.dart';
+﻿import 'package:flutter/widgets.dart';
 
 /// Делегат локализации: русский — основной, английский — второй язык
 /// (раздел 1). Строки хранятся в одном классе, без внешней генерации.
@@ -33,6 +33,9 @@ class S {
   String get all => this == ru ? 'Все' : 'All';
   String get notChosen => this == ru ? 'Не выбрано' : 'Not selected';
   String get noData => this == ru ? 'Нет данных' : 'No data';
+
+  /// Заголовок экрана при ошибке. Само сообщение с кодом — в карточке.
+  String get error => this == ru ? 'Ошибка подключения' : 'Connection error';
   String get close => this == ru ? 'Закрыть' : 'Close';
 
   // Главная -----------------------------------------------------------

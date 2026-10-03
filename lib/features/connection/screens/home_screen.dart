@@ -10,6 +10,7 @@ import '../../../core/theme/app_text_styles.dart';
 import '../../../core/widgets/blup_visp.dart';
 import '../../../core/widgets/visp_button.dart';
 import '../../../core/widgets/visp_chip.dart';
+import '../../../core/feedback/visp_error.dart';
 import '../../../core/widgets/visp_glass.dart';
 import '../../../core/widgets/visp_input.dart';
 import '../../../core/widgets/visp_card.dart';
@@ -182,7 +183,6 @@ class _ConnectedHome extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final colors = SemanticColors.of(context);
     final isBlocked = state.status == BlupStatus.blocked;
 
     return SafeArea(
@@ -192,58 +192,54 @@ class _ConnectedHome extends StatelessWidget {
             // Blup Visp с кнопкой в центре фигуры. Отдельной кнопки
             // «Подключиться» под ним нет: главное действие не уводит
             // взгляд с фигуры (раздел 4.1, 8.1).
-            child: Stack(
+            //
+            // Порядок сверху вниз: статус, фигура, состояние, действия.
+            // Пустого растягивающего промежутка над фигурой больше нет —
+            // раньше он отодвигал блюп к низу и превращал главный элемент
+            // в подпись у нижнего края.
+            child: Column(
               children: [
-                Positioned.fill(
-                  child: Column(
-                    children: [
-                      const SizedBox(height: AppSpacing.xl),
-                      _StatusText(state: state, s: s),
-                      const Spacer(),
-                      // Фигура занимает свободную область: блюп сам
-                      // подстраивается под неё, поэтому колонка не может
-                      // переполниться ни на одном экране.
-                      Expanded(child: BlupLayer(state: state)),
-                      if (state.errorText != null)
-                        Padding(
-                          padding: const EdgeInsets.fromLTRB(
-                            AppSpacing.xl,
-                            0,
-                            AppSpacing.xl,
-                            AppSpacing.m,
-                          ),
-                          child: Text(
-                            state.errorText!,
-                            textAlign: TextAlign.center,
-                            style: AppTextStyles.small.copyWith(
-                              color: colors.danger,
-                            ),
-                          ),
-                        ),
-                      if (isBlocked)
-                        Padding(
-                          padding: const EdgeInsets.only(bottom: AppSpacing.m),
-                          child: Center(
-                            child: VispChip(
-                              label: s.trafficBlocked,
-                              tone: ChipTone.danger,
-                            ),
-                          ),
-                        ),
-                      _ProtocolSelector(state: state),
-                      if (state.debugVisible) ...[
-                        const SizedBox(height: AppSpacing.l),
-                        Padding(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: AppSpacing.l,
-                          ),
-                          child: _DebugBlock(state: state),
-                        ),
-                      ],
-                      const SizedBox(height: AppSpacing.l),
-                    ],
+                _StatusText(state: state, s: s),
+                // Фигура занимает всю оставшуюся область: блюп сам
+                // подстраивается под неё, поэтому колонка не может
+                // переполниться ни на одном экране.
+                Expanded(child: BlupLayer(state: state)),
+                if (state.error != null)
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(
+                      AppSpacing.l,
+                      0,
+                      AppSpacing.l,
+                      AppSpacing.m,
+                    ),
+                    child: VispErrorCard(
+                      error: state.error!,
+                      onRetry: state.selectedProfile == null
+                          ? null
+                          : () => state.connect(),
+                    ),
                   ),
-                ),
+                if (isBlocked)
+                  Padding(
+                    padding: const EdgeInsets.only(bottom: AppSpacing.m),
+                    child: Center(
+                      child: VispChip(
+                        label: s.trafficBlocked,
+                        tone: ChipTone.danger,
+                      ),
+                    ),
+                  ),
+                _ProtocolSelector(state: state),
+                if (state.debugVisible) ...[
+                  const SizedBox(height: AppSpacing.l),
+                  Padding(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: AppSpacing.l,
+                    ),
+                    child: _DebugBlock(state: state),
+                  ),
+                ],
+                const SizedBox(height: AppSpacing.l),
               ],
             ),
           ),
@@ -283,7 +279,10 @@ class _StatusText extends StatelessWidget {
       case BlupStatus.connected:
         label = s.connected;
       case BlupStatus.error:
-        label = isError ? (state.errorText?.split('.').first ?? s.vpnOff) : s.vpnOff;
+        // В заголовок идёт короткий код ошибки, а не её текст. Полный текст
+        // живёт в карточке под фигурой; раньше он попадал и туда, и в
+        // заголовок, и растягивал его на три строки.
+        label = state.error?.code.code ?? s.error;
       case BlupStatus.blocked:
         label = s.trafficBlocked;
     }
@@ -292,12 +291,13 @@ class _StatusText extends StatelessWidget {
       children: [
         Text(
           label,
+          textAlign: TextAlign.center,
           style: AppTextStyles.h1.copyWith(
             color: isError
                 ? colors.danger
                 : isConnected
                     ? colors.primary
-                    : colors.textPrimary,
+                    : colors.foreground,
           ),
         ),
         const SizedBox(height: AppSpacing.xs + 2),

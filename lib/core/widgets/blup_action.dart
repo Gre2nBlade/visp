@@ -84,8 +84,6 @@ class BlupAction extends StatelessWidget {
                 ? colors.primaryBright
                 : colors.textSecondary;
 
-    final isRunning = _isSpinning(status);
-
     return Semantics(
       button: true,
       label: _label(s),
@@ -95,13 +93,11 @@ class BlupAction extends StatelessWidget {
           width: size,
           height: size,
           child: Material(
-            color: colors.background.withValues(alpha: 0.55),
-            shape: CircleBorder(
-              side: BorderSide(
-                color: ringColor.withValues(alpha: 0.55),
-                width: 1.5,
-              ),
-            ),
+            // Контур вокруг иконки убран: вместе с кольцом фигуры он давал
+            // «мишень» из двух окружностей. Область нажатия остаётся той же
+            // по размеру, а состояние читается по иконке и надписи над фигурой.
+            color: Colors.transparent,
+            shape: const CircleBorder(),
             clipBehavior: Clip.antiAlias,
             child: InkWell(
               customBorder: const CircleBorder(),
@@ -113,34 +109,22 @@ class BlupAction extends StatelessWidget {
                   onTap();
                 }
               },
-child: Center(
-                  // Во время установки прогресс показывает дуга по кольцу
-                  // фигуры, поэтому здесь остаётся только иконка: два
-                  // индикатора прогресса рядом выглядели бы дублем.
-                  child: isRunning
-                      ? SizedBox(
-                          key: const ValueKey('busy'),
-                          width: size * 0.30,
-                          height: size * 0.30,
-                        )
-                      : VispIcon(
-                          _icon,
-                          key: const ValueKey('icon'),
-                          size: size * 0.36,
-                          color: ringColor,
-                        ),
+              child: Center(
+                // Иконка не исчезает при установке: раньше на её месте
+                // появлялся пустой прямоугольник, и фигура теряла смысл.
+                // Работу показывают импульсы по контуру фигуры.
+                child: VispIcon(
+                  _icon,
+                  key: const ValueKey('icon'),
+                  size: size * 0.36,
+                  color: ringColor,
+                ),
                 ),
             ),
           ),
         ),
       ),
     );
-  }
 
-  /// Вращение в фазах установки: так видно, что процесс идёт.
-  static bool _isSpinning(BlupStatus status) =>
-      status == BlupStatus.preparing ||
-      status == BlupStatus.checking ||
-      status == BlupStatus.connecting ||
-      status == BlupStatus.reconnecting;
+  }
 }

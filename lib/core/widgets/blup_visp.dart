@@ -1,5 +1,4 @@
-import 'dart:math' as math;
-import 'dart:ui' as ui;
+﻿import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
 
@@ -67,6 +66,8 @@ class BlupVisp extends StatefulWidget {
     this.trafficPulse = false,
     this.motionReduced = false,
     this.action,
+    this.pulseToken = 0,
+    this.busy = false,
   });
 
   final BlupStatus status;
@@ -85,13 +86,23 @@ class BlupVisp extends StatefulWidget {
   /// единым целым, и главное действие не уводит взгляд вниз.
   final Widget? action;
 
+  /// Счётчик нажатий. Каждое увеличение отправляет по фигуре импульс.
+  ///
+  /// Отдельное значение вместо callback'а: фигура не знает, кто её трогает,
+  /// а BlupLayer знает и про нажатие, и про отмену.
+  final int pulseToken;
+
+  /// Идёт установка: импульсы повторяются, показывая работу без спиннера.
+  final bool busy;
+
   @override
   State<BlupVisp> createState() => _BlupVispState();
 }
 
 class _BlupVispState extends State<BlupVisp>
-    with SingleTickerProviderStateMixin {
+    with TickerProviderStateMixin {
   late final AnimationController _controller;
+  late final AnimationController _pulse;
   late final math.Random _random;
   late final List<double> _seed;
 
@@ -105,8 +116,31 @@ class _BlupVispState extends State<BlupVisp>
       duration: _durationFor(widget.status),
       value: 0,
     );
+    // Импульс — отдельный контроллер: деформация контура идёт всегда, а
+    // нажатия добавляют собственные волны и не сбивают её фазу.
+    _pulse = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 1400),
+      value: 1,
+    );
     if (!_isStatic) {
       _controller.repeat();
+    }
+    _syncPulse();
+  }
+
+  /// Импульс повторяется, пока идёт установка, и одиночный — по нажатию.
+  void _syncPulse() {
+    if (widget.motionReduced) {
+      _pulse.stop();
+      _pulse.value = 1;
+      return;
+    }
+    if (widget.busy) {
+      if (!_pulse.isAnimating) _pulse.repeat();
+    } else {
+      _pulse.stop();
+      _pulse.value = 1;
     }
   }
 
@@ -135,7 +169,8 @@ class _BlupVispState extends State<BlupVisp>
   @override
   void didUpdateWidget(covariant BlupVisp oldWidget) {
     super.didUpdateWidget(oldWidget);
-    if (oldWidget.status != widget.status || oldWidget.motionReduced != widget.motionReduced) {
+    if (oldWidget.status != widget.status ||
+        oldWidget.motionReduced != widget.motionReduced) {
       _controller.duration = _durationFor(widget.status);
       if (_isStatic) {
         _controller.stop();
@@ -143,26 +178,35 @@ class _BlupVispState extends State<BlupVisp>
         _controller.repeat();
       }
     }
+    if (oldWidget.pulseToken != widget.pulseToken) {
+      // Нажатие: один импульс от центра к контуру.
+      _pulse.forward(from: 0);
+    }
+    if (oldWidget.busy != widget.busy ||
+        oldWidget.motionReduced != widget.motionReduced) {
+      _syncPulse();
+    }
   }
 
   @override
   void dispose() {
     _controller.dispose();
+    _pulse.dispose();
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
     if (_isStatic) {
-      return _paint(const AlwaysStoppedAnimation(0.42));
+      return _paint(const AlwaysStoppedAnimation(0.42), 1);
     }
     return AnimatedBuilder(
-      animation: _controller,
-      builder: (context, _) => _paint(_controller),
+      animation: Listenable.merge([_controller, _pulse]),
+      builder: (context, _) => _paint(_controller, _pulse.value),
     );
   }
 
-  Widget _paint(Animation<double> animation) {
+  Widget _paint(Animation<double> animation, double pulse) {
     return RepaintBoundary(
       child: SizedBox(
         width: widget.size,
@@ -174,12 +218,12 @@ class _BlupVispState extends State<BlupVisp>
               child: CustomPaint(
                 painter: _BlupPainter(
                   progress: animation.value,
+                  pulse: pulse,
                   status: widget.status,
                   compact: widget.compact,
                   trafficPulse: widget.trafficPulse,
                   seed: _seed,
                   brightness: Theme.of(context).brightness,
-                  motionReduced: widget.motionReduced,
                 ),
               ),
             ),
@@ -195,27 +239,34 @@ class _BlupVispState extends State<BlupVisp>
 class _BlupPainter extends CustomPainter {
   _BlupPainter({
     required this.progress,
+    required this.pulse,
     required this.status,
     required this.compact,
     required this.trafficPulse,
     required this.seed,
     required this.brightness,
-    this.motionReduced = false,
   });
 
   final double progress;
+
+  /// Фаза импульса: 0 — только что поступило нажатие, 1 — импульс дошёл до
+  /// контура и погас. Значения между 0 и 1 означают расходящееся кольцо.
+  final double pulse;
   final BlupStatus status;
   final bool compact;
   final bool trafficPulse;
   final List<double> seed;
   final Brightness brightness;
 
-  /// При включённом «уменьшить движение» дуга прогресса не рисуется:
-  /// неподвижная дуга неотличима от зависшего подключения, а статус
-  /// всё равно читается текстом рядом с фигурой.
-  final bool motionReduced;
-
   static const _pointCount = 14;
+
+  /// Взаимно некратные частоты деформации.
+  ///
+  /// Раньше частоты были кратны друг другу, поэтому через несколько секунд
+  /// форма возвращалась к исходной и цикл становился заметно механическим —
+  /// это и читалось как дёрганье. Несократимые частоты не дают короткого
+  /// периода: движение никогда не повторяется и выглядит случайным.
+  static const _wobbleFrequencies = <double>[0.37, 0.53, 0.71, 0.29];
 
   @override
   void paint(Canvas canvas, Size size) {
@@ -225,26 +276,26 @@ class _BlupPainter extends CustomPainter {
 
     final t = progress * 2 * math.pi;
 
-    // Дыхание контура для отключённого состояния.
-    double breath = 1.0;
-    switch (status) {
-      case BlupStatus.idle:
-        breath = 1 + 0.02 * math.sin(t * 0.5);
-      case BlupStatus.connected:
-        breath = 1 + 0.012 * math.sin(t * 0.6);
-      default:
-        breath = 1.0;
-    }
+    // Амплитуда дыхания подстраивается под состояние одной формулой, а не
+    // переключением: смена состояния больше не меняет форму скачком.
+    final breathAmplitude = switch (status) {
+      BlupStatus.idle => 0.020,
+      BlupStatus.connected => 0.014,
+      _ => 0.008,
+    };
+    final breath = 1 + breathAmplitude * math.sin(t * 0.31);
 
     final pts = <Offset>[];
     for (var i = 0; i < _pointCount; i++) {
       final angle = (2 * math.pi * i) / _pointCount;
-      final s1 = seed[i % seed.length];
-      final s2 = seed[(i + 5) % seed.length];
-      final s3 = seed[(i + 9) % seed.length];
-      final wobble = 0.055 * math.sin(t * 0.55 + i * s1) +
-          0.035 * math.sin(t * 0.9 + i * s2 + 1.2) +
-          0.02 * math.sin(t * 0.31 + i * s3 + 2.4);
+      // Фаза каждой точки выведена из seed и не делится на длину списка:
+      // у соседних точек фазы не совпадают, поэтому контур не «дышит» целиком.
+      final phase = seed[i % seed.length] + i * 1.7;
+      var wobble = 0.0;
+      for (var f = 0; f < _wobbleFrequencies.length; f++) {
+        wobble += math.sin(t * _wobbleFrequencies[f] + phase + f * 2.1) *
+            (0.055 / (f + 1));
+      }
       final r = baseRadius * breath * (1 + wobble);
       pts.add(Offset(cx + r * math.cos(angle), cy + r * math.sin(angle)));
     }
@@ -268,51 +319,32 @@ class _BlupPainter extends CustomPainter {
             ? colors.blupError
             : colors.blupIdle;
 
-    // Заливка: спокойная, с мягким градиентом от центра к краю.
-    final fillTop = status == BlupStatus.connected
-        ? colors.blupConnected
+    final isConnected = status == BlupStatus.connected;
+
+    // Заливка сплошная: градиент внутри фигуры читался как отдельный объект
+    // и мешал форме быть знаком. Тон меняется по состоянию, а не переливается.
+    // При подключении фигура просто становится ярче — без вращения и дуг.
+    final fill = isConnected
+        ? colors.blupConnected.withValues(alpha: 0.30)
         : isAccent
-            ? colors.primary.withValues(alpha: brightness == Brightness.dark ? 0.30 : 0.22)
+            ? colors.primary.withValues(alpha: 0.12)
             : isError
-                ? colors.blupError.withValues(alpha: 0.14)
-                : colors.blupIdle.withValues(alpha: brightness == Brightness.dark ? 0.16 : 0.10);
+                ? colors.blupError.withValues(alpha: 0.12)
+                : colors.blupIdle.withValues(
+                    alpha: brightness == Brightness.dark ? 0.10 : 0.07,
+                  );
 
-    final fillBottom = status == BlupStatus.connected
-        ? colors.blupConnected.withValues(alpha: brightness == Brightness.dark ? 0.45 : 0.55)
-        : isAccent
-            ? colors.primary.withValues(alpha: brightness == Brightness.dark ? 0.10 : 0.08)
-            : colors.blupIdle.withValues(alpha: 0.03);
-
-    final rect = Rect.fromCircle(center: Offset(cx, cy), radius: baseRadius * 1.3);
-    canvas.drawPath(
-      path,
-      Paint()
-        ..shader = ui.Gradient.linear(
-          Offset(cx, rect.top),
-          Offset(cx, rect.bottom),
-          [fillTop, fillBottom],
-        ),
-    );
-
-    // Световой край для активных состояний.
-    if (isAccent && !compact) {
-      canvas.drawPath(
-        path,
-        Paint()
-          ..color = colors.primary.withValues(alpha: 0.18)
-          ..maskFilter = const MaskFilter.blur(BlurStyle.outer, 22),
-      );
-    }
+    canvas.drawPath(path, Paint()..color = fill);
 
     // Периметр: тонкий движущийся контур.
     canvas.drawPath(
       path,
       Paint()
         ..style = PaintingStyle.stroke
-        ..strokeWidth = compact ? 1.2 : 1.8
+        ..strokeWidth = compact ? 1.2 : (isConnected ? 2.2 : 1.8)
         ..color = perimeter.withValues(
-          alpha: status == BlupStatus.connected
-              ? (trafficPulse ? 0.95 : 0.7)
+          alpha: isConnected
+              ? (trafficPulse ? 1 : 0.85)
               : status == BlupStatus.idle
                   ? 0.55
                   : 0.9,
@@ -320,63 +352,33 @@ class _BlupPainter extends CustomPainter {
         ..strokeJoin = StrokeJoin.round,
     );
 
-    // Дуга прогресса по кольцу фигуры — как в ConnectButton Amnezia:
-    // при установке она вращается, при подключении исчезает.
-    if (!motionReduced &&
-        (status == BlupStatus.preparing ||
-            status == BlupStatus.checking ||
-            status == BlupStatus.connecting ||
-            status == BlupStatus.reconnecting)) {
-      final ringRadius = baseRadius * 1.16;
-      canvas.drawArc(
-        Rect.fromCircle(center: Offset(cx, cy), radius: ringRadius),
-        -math.pi / 2 + (progress * 2 * math.pi),
-        math.pi * 0.42,
-        false,
-        Paint()
-          ..style = PaintingStyle.stroke
-          ..strokeWidth = compact ? 1.6 : 2.6
-          ..strokeCap = StrokeCap.round
-          ..color = colors.primary.withValues(alpha: 0.85),
-      );
-    }
-
-    // Одна направленная волна по контуру во время подключения.
-    if (!motionReduced &&
-        (status == BlupStatus.connecting ||
-            status == BlupStatus.checking ||
-            status == BlupStatus.preparing ||
-            status == BlupStatus.reconnecting) &&
-        !compact) {
-      final metrics = path.computeMetrics(forceClosed: true);
-      for (final metric in metrics) {
-        final len = metric.length;
-        final waveLen = len * 0.22;
-        final start = (progress * 1.6) % 1.0 * len;
-        final wavePath = metric.extractPath(start, math.min(start + waveLen, len));
-        canvas.drawPath(
-          wavePath,
-          Paint()
-            ..style = PaintingStyle.stroke
-            ..strokeWidth = 3.2
-            ..strokeCap = StrokeCap.round
-            ..color = colors.primaryBright
-            ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 6),
-        );
-      }
-    }
-
-    // Тонкая внутренняя окружность-скелет для спокойных состояний.
-    if (status == BlupStatus.idle || status == BlupStatus.blocked) {
+    // Импульс: расходящееся кольцо от центра к контуру. Он и есть признак
+    // нажатия и установки — вместо крутящегося индикатора, который читался
+    // как отдельный элемент и дублировал состояние.
+    if (!compact && pulse < 1) {
+      canvas.save();
+      // Кольцо не выходит за фигуру: импульс должен казаться её внутренним
+      // дыханием, а не расширяющимся кругом поверх экрана.
+      canvas.clipPath(path);
+      final t = Curves.easeOut.transform(pulse);
+      final radius = baseRadius * (0.12 + 1.02 * t);
       canvas.drawCircle(
         Offset(cx, cy),
-        baseRadius * 0.52,
+        radius,
         Paint()
           ..style = PaintingStyle.stroke
-          ..strokeWidth = 0.8
-          ..color = colors.blupIdle.withValues(alpha: 0.35),
+          ..strokeWidth = 2.4
+          ..color = (isAccent || isConnected ? colors.primary : colors.mutedForeground)
+              .withValues(alpha: 0.55 * (1 - t)),
       );
+      canvas.restore();
     }
+
+    // Дуга прогресса, бегущая волна и внутренняя окружность-скелет убраны
+    // намеренно. Вместе с кольцом кнопки внутренний круг давал «мишень» из
+    // трёх концентрических окружностей, а дуга и волна читались как
+    // индикатор загрузки. Остаётся одна фигура и одна иконка в центре;
+    // состояние видно по надписи, иконке и цвету периметра.
   }
 
   Path _smoothClosed(List<Offset> pts) {

@@ -23,11 +23,16 @@ class VispToast {
     String? actionLabel,
     VoidCallback? onAction,
   }) {
+    // Кнопка действия появляется только вместе с обработчиком: подпись без
+    // обработчика приводила к падению на `onAction!`, и ошибка оставалась
+    // без сообщения — пользователь не понимал, что произошло.
     _show(
       context,
       message,
       VispToastTone.danger,
-      actionLabel != null ? (actionLabel, onAction!) : null,
+      (actionLabel != null && onAction != null)
+          ? (actionLabel, onAction)
+          : null,
     );
   }
 

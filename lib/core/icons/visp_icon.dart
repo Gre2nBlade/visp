@@ -390,13 +390,81 @@ class VispIcon extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final tone = color ?? theme.iconTheme.color ?? theme.colorScheme.onSurface;
+
+    // У «домика» в MynaUI нет настоящего залитого начертания: solid-глиф лишь
+    // немного жирнее контура, поэтому заливкой выглядел только контур двери,
+    // а сам дом оставался пустым. Активный домик рисуется собственным
+    // контуром, чтобы заливался весь силуэт.
+    if (filled && icon == VispIcons.home) {
+      return Semantics(
+        label: icon.name,
+        child: SizedBox(
+          width: size,
+          height: size,
+          child: CustomPaint(painter: _FilledHomePainter(tone)),
+        ),
+      );
+    }
+
     return Icon(
       filled ? filledData(icon) : icon.data,
       size: size,
-      color: color ?? theme.iconTheme.color,
+      color: tone,
       semanticLabel: icon.name,
     );
   }
+}
+
+/// Залитый силуэт дома: крыша, стены и проём двери вырезаны из одной фигуры,
+/// поэтому дом читается как цельное пятно, а не как контур с дверью.
+class _FilledHomePainter extends CustomPainter {
+  const _FilledHomePainter(this.color);
+
+  final Color color;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final w = size.width;
+    final h = size.height;
+    final path = Path()
+      // Крыша.
+      ..moveTo(w * 0.5, h * 0.06)
+      ..lineTo(w * 0.97, h * 0.47)
+      ..lineTo(w * 0.86, h * 0.47)
+      // Правая стена.
+      ..lineTo(w * 0.86, h * 0.94)
+      ..lineTo(w * 0.14, h * 0.94)
+      // Левая стена.
+      ..lineTo(w * 0.14, h * 0.47)
+      ..lineTo(w * 0.03, h * 0.47)
+      ..close();
+
+    // Проём двери вырезается из заливки. BlendMode.clear работает только
+    // внутриCompositing-слоя, иначе вырезался бы прозрачный кружок во всём
+    // экране под иконкой, поэтому слой ограничиваем размером иконки.
+    canvas.saveLayer(Offset.zero & size, Paint());
+    canvas.drawPath(path, Paint()..color = color);
+
+    final door = Path()
+      ..addRRect(
+        RRect.fromRectAndRadius(
+          Rect.fromLTWH(w * 0.40, h * 0.60, w * 0.20, h * 0.34),
+          Radius.circular(w * 0.05),
+        ),
+      );
+    canvas.drawPath(
+      door,
+      Paint()
+        ..blendMode = BlendMode.clear
+        ..color = const Color(0xFF000000),
+    );
+    canvas.restore();
+  }
+
+  @override
+  bool shouldRepaint(covariant _FilledHomePainter old) =>
+      old.color != color;
 }
 
 /// Иконка-кнопка с tooltip/семантической меткой (требование accessibility).
