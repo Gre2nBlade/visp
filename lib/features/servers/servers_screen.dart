@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../../core/theme/app_colors.dart';
@@ -6,8 +6,8 @@ import '../../core/theme/app_spacing.dart';
 import '../../core/theme/app_text_styles.dart';
 import '../../l10n/strings.dart';
 import '../../state/app_state.dart';
-import '../connection/models/connection_models.dart';
 import 'servers_content.dart';
+import 'widgets/server_filter_button.dart';
 
 /// Вкладка «Серверы»: один список, поиск и фильтрация (раздел 5).
 class ServersScreen extends StatelessWidget {
@@ -17,7 +17,7 @@ class ServersScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     final state = context.watch<AppState>();
     final s = context.s;
-    final protocols = _availableProtocols(state.hosts);
+    final protocols = ServerFilterButton.availableProtocols(state.hosts);
 
     return Scaffold(
       appBar: AppBar(
@@ -34,36 +34,22 @@ class ServersScreen extends StatelessWidget {
                 AppSpacing.l,
                 AppSpacing.s,
               ),
-              child: _SearchField(),
-            ),
-            SizedBox(
-              height: 40,
-              child: ListView(
-                scrollDirection: Axis.horizontal,
-                padding: const EdgeInsets.symmetric(
-                  horizontal: AppSpacing.l,
-                ),
+              child: Row(
                 children: [
-                  _FilterChip(
-                    label: s.all,
-                    selected: state.protocolFilter == null,
-                    onTap: () => state.setProtocolFilter(null),
-                  ),
+                  Expanded(child: _SearchField()),
                   const SizedBox(width: AppSpacing.s),
-                  for (final protocol in protocols) ...[
-                    _FilterChip(
-                      label: protocol.displayName,
-                      selected: state.protocolFilter == protocol,
-                      onTap: () => state.setProtocolFilter(
-                        state.protocolFilter == protocol ? null : protocol,
-                      ),
-                    ),
-                    const SizedBox(width: AppSpacing.s),
-                  ],
-                  _FilterChip(
-                    label: s.filterReady,
-                    selected: state.readyOnly,
-                    onTap: () => state.setReadyOnly(!state.readyOnly),
+                  // Фильтры — одна кнопка: лента чипов не помещалась в экран,
+                  // когда протоколов становилось больше четырёх.
+                  ServerFilterButton(
+                    protocolFilter: state.protocolFilter,
+                    readyOnly: state.readyOnly,
+                    protocols: protocols,
+                    onProtocolChanged: state.setProtocolFilter,
+                    onReadyOnlyChanged: state.setReadyOnly,
+                    onClear: () {
+                      state.setProtocolFilter(null);
+                      state.setReadyOnly(false);
+                    },
                   ),
                 ],
               ),
@@ -76,16 +62,7 @@ class ServersScreen extends StatelessWidget {
     );
   }
 
-  List<Protocol> _availableProtocols(List<ServerHost> hosts) {
-    final set = <Protocol>{};
-    for (final host in hosts) {
-      for (final profile in host.profiles) {
-        set.add(profile.protocol);
-      }
-    }
-    return set.toList();
   }
-}
 
 class _SearchField extends StatelessWidget {
   @override
@@ -128,54 +105,6 @@ class _SearchField extends StatelessWidget {
               splashRadius: 16,
             ),
         ],
-      ),
-    );
-  }
-}
-
-class _FilterChip extends StatelessWidget {
-  const _FilterChip({
-    required this.label,
-    required this.selected,
-    required this.onTap,
-  });
-
-  final String label;
-  final bool selected;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    final colors = SemanticColors.of(context);
-    return Material(
-      color: selected
-          ? colors.primary.withValues(alpha: 0.16)
-          : colors.surface2,
-      borderRadius: BorderRadius.circular(AppRadius.s + 4),
-      child: InkWell(
-        borderRadius: BorderRadius.circular(AppRadius.s + 4),
-        onTap: onTap,
-        child: Container(
-          padding: const EdgeInsets.symmetric(
-            horizontal: AppSpacing.m,
-            vertical: AppSpacing.s - 2,
-          ),
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(AppRadius.s + 4),
-            border: Border.all(
-              color: selected
-                  ? colors.primary.withValues(alpha: 0.5)
-                  : colors.border,
-            ),
-          ),
-          child: Text(
-            label,
-            style: AppTextStyles.small.copyWith(
-              color: selected ? colors.primary : colors.textSecondary,
-              fontWeight: selected ? FontWeight.w600 : FontWeight.w500,
-            ),
-          ),
-        ),
       ),
     );
   }

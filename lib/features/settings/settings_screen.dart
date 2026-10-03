@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../../core/icons/visp_icon.dart';
@@ -125,17 +125,6 @@ class SettingsScreen extends StatelessWidget {
                 ),
               ],
             ),
-            VispSectionHeader(text: s.groupHaptics),
-            VispListGroup(
-              children: [
-                VispListRow(
-                  title: s.groupHaptics,
-                  description: s.hapticsDesc,
-                  icon: VispIcons.signal,
-                  trailing: _HapticsSegment(),
-                ),
-              ],
-            ),
             VispSectionHeader(text: s.groupPersonalization),
             VispListGroup(
               children: [
@@ -143,6 +132,17 @@ class SettingsScreen extends StatelessWidget {
                   title: s.theme,
                   description: _themeLabel(state.themeMode, s),
                   icon: VispIcons.theme,
+                  trailing: const VispIcon(VispIcons.chevronRight, size: 18),
+                  onTap: () => PersonalizationScreen.open(context),
+                ),
+                // Тактильная отдача переехала в «Персонализацию»: там же
+                // тема и материал, а здесь остались только сетевые и
+                // системные настройки. Дублировать один переключатель в двух
+                // местах означало бы два источника правды.
+                VispListRow(
+                  title: s.appearance,
+                  description: s.appearanceDesc,
+                  icon: VispIcons.signal,
                   trailing: const VispIcon(VispIcons.chevronRight, size: 18),
                   onTap: () => PersonalizationScreen.open(context),
                 ),
@@ -382,24 +382,7 @@ class _LanguageRow extends StatelessWidget {
             ),
           ],
         ),
-      ),
-    );
-  }
-}
-
-class _HapticsSegment extends StatelessWidget {
-  @override
-  Widget build(BuildContext context) {
-    final state = context.watch<AppState>();
-    return VispSegmented<HapticPref>(
-      values: HapticPref.values,
-      value: state.haptics,
-      labels: {
-        HapticPref.auto: context.s.auto,
-        HapticPref.minimal: context.s.minimal,
-        HapticPref.off: context.s.off,
-      },
-      onChanged: state.setHaptics,
+),
     );
   }
 }

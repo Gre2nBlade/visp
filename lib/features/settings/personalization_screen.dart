@@ -58,6 +58,10 @@ class PersonalizationScreen extends StatelessWidget {
             const SizedBox(height: AppSpacing.s),
             _ThemeSegment(state: state),
             const SizedBox(height: AppSpacing.xl),
+            // Оформление и отклик живут рядом: тема, акцент, материал и
+            // тактильная отдача — это всё про то, как приложение ощущается.
+            _LookCard(state: state),
+            const SizedBox(height: AppSpacing.xl),
             VispCard(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -68,8 +72,8 @@ class PersonalizationScreen extends StatelessWidget {
                     'Стекло — материал навигационной капсулы, кнопки '
                     'добавления и шторки серверов, а не смена всей палитры. '
                     'Текст и цифры остаются резкими.',
-                    style: AppTextStyles.small.copyWith(
-                      color: SemanticColors.of(context).textSecondary,
+                    style: AppTextStyles.label.copyWith(
+                      color: SemanticColors.of(context).mutedForeground,
                       height: 1.5,
                     ),
                   ),
@@ -88,6 +92,113 @@ class PersonalizationScreen extends StatelessWidget {
             _IconsCard(),
           ],
         ),
+      ),
+    );
+  }
+}
+
+class _LookCard extends StatelessWidget {
+  const _LookCard({required this.state});
+
+  final AppState state;
+
+  @override
+  Widget build(BuildContext context) {
+    final s = context.s;
+    final colors = SemanticColors.of(context);
+
+    return VispCard(
+      padding: EdgeInsets.zero,
+      child: Column(
+        children: [
+          Padding(
+            padding: const EdgeInsets.fromLTRB(
+              AppSpacing.l,
+              AppSpacing.m,
+              AppSpacing.l,
+              AppSpacing.s,
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(s.appearance, style: AppTextStyles.h2),
+                const SizedBox(height: AppSpacing.xs),
+                Text(
+                  s.appearanceDesc,
+                  style: AppTextStyles.label.copyWith(
+                    color: colors.mutedForeground,
+                    height: 1.5,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          Divider(height: 1, color: colors.border, indent: AppSpacing.l),
+          // Тактильная отдача переехала сюда из настроек: она описывает
+          // ощущение приложения, а не сетевое поведение.
+          _SwitchLine(
+            title: s.groupHaptics,
+            description: s.hapticsDesc,
+            value: state.haptics != HapticPref.off,
+            onChanged: (v) =>
+                state.setHaptics(v ? HapticPref.auto : HapticPref.off),
+          ),
+          Divider(height: 1, color: colors.border, indent: AppSpacing.l),
+          _SwitchLine(
+            title: s.navLabels,
+            description: s.navLabelsDesc,
+            value: state.navLabelsVisible,
+            onChanged: state.setNavLabels,
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// Строка с переключателем внутри карточки: заголовок, пояснение и
+/// переключатель справа. Отдельная карточка на каждый пункт не нужна —
+/// настроек внешнего вида всего несколько.
+class _SwitchLine extends StatelessWidget {
+  const _SwitchLine({
+    required this.title,
+    required this.description,
+    required this.value,
+    required this.onChanged,
+  });
+
+  final String title;
+  final String description;
+  final bool value;
+  final ValueChanged<bool> onChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(
+        horizontal: AppSpacing.l,
+        vertical: AppSpacing.s,
+      ),
+      child: Row(
+        children: [
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(title, style: AppTextStyles.body),
+                const SizedBox(height: 2),
+                Text(
+                  description,
+                  style: AppTextStyles.label.copyWith(
+                    color: SemanticColors.of(context).mutedForeground,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(width: AppSpacing.m),
+          VispSwitch(value: value, onChanged: onChanged),
+        ],
       ),
     );
   }

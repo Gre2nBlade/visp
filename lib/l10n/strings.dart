@@ -36,6 +36,24 @@ class S {
 
   /// Заголовок экрана при ошибке. Само сообщение с кодом — в карточке.
   String get error => this == ru ? 'Ошибка подключения' : 'Connection error';
+
+  String get appearance => this == ru ? 'Оформление' : 'Appearance';
+  String get appearanceDesc => this == ru
+      ? 'Акцент, отклик и то, как приложение ощущается в руке.'
+      : 'Accent, feedback and how the app feels in hand.';
+  String get navLabels => this == ru
+      ? 'Подписи вкладок' : 'Tab labels';
+  String get navLabelsDesc => this == ru
+      ? 'Показывать названия под иконками в навигации' : 'Show names under navigation icons';
+
+  String get filter => this == ru ? 'Фильтр' : 'Filter';
+  String get filterHint => this == ru
+      ? 'Показываются только выбранные протоколы и готовые профили.'
+      : 'Only selected protocols and ready profiles are shown.';
+  String get filterReadyDesc => this == ru
+      ? 'Профиль с установленным движком' : 'Profile with an installed engine';
+  String get filterReadyShort =>
+      this == ru ? 'готовые' : 'ready';
   String get close => this == ru ? 'Закрыть' : 'Close';
 
   // Главная -----------------------------------------------------------

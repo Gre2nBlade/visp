@@ -11,6 +11,7 @@ import '../../../core/widgets/blup_visp.dart';
 import '../../../core/widgets/visp_button.dart';
 import '../../../core/widgets/visp_chip.dart';
 import '../../../core/feedback/visp_error.dart';
+import '../../servers/widgets/server_filter_button.dart';
 import '../../../core/widgets/visp_glass.dart';
 import '../../../core/widgets/visp_input.dart';
 import '../../../core/widgets/visp_card.dart';
@@ -726,11 +727,40 @@ class _ServerCard extends StatelessWidget {
               mainAxisSize: MainAxisSize.min,
               children: [
                 Padding(
-                  padding: const EdgeInsets.all(AppSpacing.m),
+                  padding: const EdgeInsets.fromLTRB(
+                    AppSpacing.l,
+                    AppSpacing.m,
+                    AppSpacing.m,
+                    AppSpacing.s,
+                  ),
                   child: Row(
                     children: [
-                      Text(s.serversList, style: AppTextStyles.h2),
-                      const Spacer(),
+                      Expanded(
+                        child: Text(
+                          s.serversList,
+                          style: AppTextStyles.h2,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                      const SizedBox(width: AppSpacing.s),
+                      // Фильтр остаётся маленькой кнопкой в строке
+                      // заголовка: растянутый на всю ширину он читался бы
+                      // как второе поле поиска. Шторка и вкладка «Серверы»
+                      // управляют одним состоянием в AppState, поэтому
+                      // расходиться они не могут.
+                      ServerFilterButton(
+                        protocolFilter: state.protocolFilter,
+                        readyOnly: state.readyOnly,
+                        protocols: ServerFilterButton.availableProtocols(state.hosts),
+                        onProtocolChanged: state.setProtocolFilter,
+                        onReadyOnlyChanged: state.setReadyOnly,
+                        onClear: () {
+                          state.setProtocolFilter(null);
+                          state.setReadyOnly(false);
+                        },
+                      ),
+                      const SizedBox(width: AppSpacing.xs),
                       VispIconButton(
                         icon: VispIcons.close,
                         tooltip: s.close,
